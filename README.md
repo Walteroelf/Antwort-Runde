@@ -20,6 +20,8 @@ Das Lehrer-Gerät hat drei Reiter, die man von links nach rechts durchgeht:
 
 Zahnrad oben rechts: *Tempo* (Gemeinsam = alle sehen deine freigegebene Aufgabe; Eigenes Tempo = Kinder blättern selbst), automatisch vorlesen, Sprechtempo, „Neue Runde“. Die Anzeige „n online“ öffnet die Kinderliste, dort trägst du echte Namen ein (nur auf diesem Gerät).
 
+**Klarnamen:** Standardmäßig siehst du überall nur die Pseudonyme. Der Schalter „Klarnamen: an/aus“ (in Durchführen, Antworten und in der Kinderliste) zeigt „Anna (Blauer Falke 42)“. Vor dem Zeigen an der Tafel ausschalten. Beim Export (Antworten → Exportieren) gibt es einen eigenen Haken „Klarnamen in die Datei schreiben“, standardmäßig aus. „Neue Runde“ und „Alle Namen löschen“ entfernen die eingetragenen Namen von diesem Gerät.
+
 Die Kinder sehen nach dem Abschicken „✓ Angekommen bei der Lehrkraft“. Ändern und nochmal abschicken ist möglich, die neue Antwort ersetzt die alte. Bricht die Verbindung ab, sendet das iPad die Antwort später automatisch nach.
 
 ## Vorlesen
@@ -49,7 +51,7 @@ Die Lehrer-Seite muss offen bleiben, solange die Kinder antworten. Lädst du sie
 *Technische Beschreibung, keine Rechtsberatung. Die Freigabe liegt bei der Schule.*
 
 - Keine Konten, keine Cookies, kein Tracking, keine Bibliotheken von Dritten (PeerJS und QR-Code liegen in `lib/`).
-- Kinder erscheinen nur mit Pseudonym. Echte Namen trägst du selbst am Lehrer-Gerät ein, sie verlassen es nie.
+- Kinder erscheinen nur mit Pseudonym. Echte Namen trägst du selbst am Lehrer-Gerät ein, sie verlassen es nie. Sie werden nur angezeigt, wenn du es einschaltest, und stehen nur in Exportdateien, wenn du es dort ausdrücklich wählst. „Neue Runde“ löscht sie.
 - Antworten (Text, Audio) laufen per WebRTC **direkt vom iPad zum Lehrer-Gerät**, verschlüsselt (DTLS). Der öffentliche PeerJS-Server (`0.peerjs.com`) vermittelt nur den Verbindungsaufbau und sieht Raumcode, zufällige Gerätekennungen und IP-Adressen, aber keine Inhalte. Bei Bedarf nutzt PeerJS einen STUN-Server von Google und TURN-Server (dann laufen die verschlüsselten Daten darüber).
 - Die Seiten kommen von GitHub Pages (IP-Adresse sichtbar wie bei jeder Webseite).
 - **Spracherkennung („Sprechen und aufschreiben lassen“)** und das Tastatur-Diktat verarbeiten Audio bei Apple. Wer das nicht möchte, schaltet bei der Aufgabe auf „nur Sprachaufnahme“ um und lässt im Tastaturdiktat nur das Tippen zu.

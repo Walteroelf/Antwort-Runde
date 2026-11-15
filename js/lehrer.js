@@ -4,7 +4,7 @@
 (function () {
   const $ = id => document.getElementById(id);
   const KEY = 'ar.teacher.' + (AR.NET === 'bc' ? 'bc' : 'p');
-  const defaults = () => ({ room: AR.genCode(4), round: AR.rid(6), tasks: [], current: -1, pace: 'live', rate: 0.9, autoRead: true, names: {}, pupils: {}, answers: {} });
+  const defaults = () => ({ room: AR.genCode(4), round: AR.rid(6), tasks: [], current: -1, pace: 'live', rate: 0.9, autoRead: true, names: {}, showNames: false, pupils: {}, answers: {} });
   let S = Object.assign(defaults(), AR.store.get(KEY, {}));
   if (!S.tasks.length) S.tasks.push(newTask());
 
@@ -57,10 +57,19 @@
   };
 
   /* ---------- Hilfen ---------- */
-  function label(pid) {
+  // Klarnamen erscheinen nur, wenn "Klarnamen anzeigen" an ist (oder beim Export ausdrücklich gewählt)
+  function label(pid, forceNames) {
     const p = S.pupils[pid] || {}; const n = (S.names[pid] || '').trim();
-    return n ? n + ' (' + (p.name || pid) + ')' : (p.name || pid);
+    return n && (forceNames === undefined ? S.showNames : forceNames) ? n + ' (' + (p.name || pid) + ')' : (p.name || pid);
   }
+  function nameToggle() {
+    const b = el('button', 'mittelknopf klein', AR.icon('users') + 'Klarnamen: ' + (S.showNames ? 'an' : 'aus'));
+    b.setAttribute('aria-pressed', S.showNames ? 'true' : 'false');
+    if (S.showNames) b.classList.add('primaer');
+    b.onclick = () => { S.showNames = !S.showNames; save(); redrawAll(); };
+    return b;
+  }
+  function redrawAll() { drawKinder(); drawLive(); drawAus(); }
   const byLabel = (a, b) => label(a).localeCompare(label(b), 'de');
   function stateMsg() { return { t: 'state', round: S.round, tasks: S.tasks, current: S.current, pace: S.pace, rate: S.rate, autoRead: S.autoRead }; }
   function broadcast() { conns.forEach((pid, c) => c.send(stateMsg())); }
@@ -143,13 +152,14 @@
     if (box.contains(document.activeElement) && document.activeElement.tagName === 'INPUT') {
       box.querySelectorAll('.kind-zeile').forEach(r => { r.firstChild.className = 'dot ' + (online.has(r.dataset.pid) ? 'ok' : ''); }); return;
     }
+    $('kTog').innerHTML = ''; $('kTog').appendChild(nameToggle());
     box.innerHTML = '';
     if (!ids.length) { box.appendChild(el('p', 'leer', 'Noch niemand verbunden.')); return; }
     ids.sort(byLabel).forEach(pid => {
       const r = el('div', 'kind-zeile'); r.dataset.pid = pid;
       r.innerHTML = '<span class="dot ' + (online.has(pid) ? 'ok' : '') + '"></span><span class="n">' + AR.esc(S.pupils[pid].name) + '</span>';
       const inp = el('input'); inp.placeholder = 'Echter Name'; inp.value = S.names[pid] || '';
-      inp.onchange = () => { S.names[pid] = inp.value; save(); drawLive(); drawAus(); };
+      inp.onchange = () => { S.names[pid] = inp.value; save(); drawLive(); drawAus(); drawKinder(); };
       r.appendChild(inp); box.appendChild(r);
     });
   }
@@ -344,6 +354,7 @@
     const A = $('liveAns'); A.innerHTML = '';
     const k = nAnswers(t.id), N = Object.keys(S.pupils).length;
     const kopf = el('div', 'abschnitt-kopf', '<h2>Antworten zu Aufgabe ' + (vi + 1) + '</h2><span class="marke ' + (N && k >= N ? 'gut' : '') + '">' + k + ' von ' + N + '</span>');
+    kopf.appendChild(nameToggle());
     A.appendChild(kopf);
     if (N) {
       const bal = el('div', 'balken', '<i style="width:' + Math.round(100 * Math.min(k, N) / N) + '%"></i>'); A.appendChild(bal);
@@ -362,6 +373,7 @@
   function drawAus() {
     if (view !== 'aus') return;
     if (anyPlaying()) { pendingDraw = true; return; }
+    $('ausTog').innerHTML = ''; $('ausTog').appendChild(nameToggle());
     const box = $('ausList'); box.innerHTML = '';
     const N = Object.keys(S.pupils).length;
     S.tasks.forEach((t, i) => {
@@ -379,21 +391,21 @@
 
   /* ---------- Export ---------- */
   const stamp = () => new Date().toISOString().slice(0, 10);
-  function exportTxt() {
+  function exportTxt(nm) {
     let out = 'Antwort-Runde ' + AR.fmtDate(Date.now()) + '\n\n';
     S.tasks.forEach((t, i) => {
       out += '=== Aufgabe ' + (i + 1) + ' ===\n' + (t.text ? t.text + '\n' : '') + (t.q ? t.q + '\n' : '') + '\n';
       const l = S.answers[t.id] || {};
-      Object.keys(l).sort(byLabel).forEach(pid => { out += label(pid) + ': ' + (l[pid].text || '') + (l[pid].audio ? ' [Sprachaufnahme]' : '') + '\n'; });
+      Object.keys(l).sort((a, b) => label(a, nm).localeCompare(label(b, nm), 'de')).forEach(pid => { out += label(pid, nm) + ': ' + (l[pid].text || '') + (l[pid].audio ? ' [Sprachaufnahme]' : '') + '\n'; });
       out += '\n';
     });
     AR.download('antworten-' + stamp() + '.txt', out, 'text/plain;charset=utf-8');
   }
-  function exportCsv() {
+  function exportCsv(nm) {
     const q = s => '"' + String(s == null ? '' : s).replace(/"/g, '""') + '"';
     const pids = Object.keys(S.pupils).sort(byLabel);
     const rows = [['Kind'].concat(S.tasks.map((t, i) => 'Aufgabe ' + (i + 1) + ': ' + (t.q || t.text || '').replace(/\s+/g, ' ').slice(0, 60)))];
-    pids.forEach(pid => rows.push([label(pid)].concat(S.tasks.map(t => { const a = (S.answers[t.id] || {})[pid]; return a ? (a.text || '') + (a.audio ? ' [Sprachaufnahme]' : '') : ''; }))));
+    pids.forEach(pid => rows.push([label(pid, nm)].concat(S.tasks.map(t => { const a = (S.answers[t.id] || {})[pid]; return a ? (a.text || '') + (a.audio ? ' [Sprachaufnahme]' : '') : ''; }))));
     AR.download('antworten-' + stamp() + '.csv', '﻿' + rows.map(r => r.map(q).join(';')).join('\n'), 'text/csv;charset=utf-8');
   }
 
@@ -423,10 +435,14 @@
     });
     $('bulkTxt').value = ''; $('dBulk').close(); save(); broadcast(); drawTasks();
   };
-  $('bExpTxt').onclick = exportTxt; $('bExpCsv').onclick = exportCsv;
+    $('bExport').onclick = () => { $('expNames').checked = false; $('expHint').hidden = !hasNames(); $('dExport').showModal(); };
+  $('expTxt').onclick = () => exportTxt($('expNames').checked);
+  $('expCsv').onclick = () => exportCsv($('expNames').checked);
+  const hasNames = () => Object.values(S.names).some(n => (n || '').trim());
+  $('bDelNames').onclick = () => { if (!hasNames() || confirm('Alle eingetragenen Klarnamen von diesem Gerät löschen?')) { S.names = {}; S.showNames = false; save(); redrawAll(); } };
   $('bNew').onclick = () => {
-    if (total() && !confirm('Neue Runde starten? Die Antworten dieser Runde werden gelöscht. Vorher bitte exportieren!')) return;
-    S.round = AR.rid(6); S.room = AR.genCode(4); S.answers = {}; S.pupils = {}; S.current = -1; vi = 0;
+    if (total() && !confirm('Neue Runde starten? Antworten, Kinderliste und Klarnamen dieser Runde werden gelöscht. Vorher bitte exportieren!')) return;
+    S.round = AR.rid(6); S.room = AR.genCode(4); S.answers = {}; S.pupils = {}; S.names = {}; S.showNames = false; S.current = -1; vi = 0;
     audio.clear(); urls.forEach(u => URL.revokeObjectURL(u)); urls.clear(); idb.clear(); online.clear();
     conns.forEach((pid, c) => c.close()); conns.clear();
     save(); $('dSet').close(); drawHead(); drawKinder(); showView('aufgaben'); startHost();

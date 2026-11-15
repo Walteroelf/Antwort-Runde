@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Antwort-Runde · Lehrer-Gerät</title>
-<link rel="stylesheet" href="css/style.css?v=4">
+<link rel="stylesheet" href="css/style.css?v=5">
 </head>
 <body>
 <header class="markise"><div class="kopf">
@@ -44,8 +44,8 @@
   <section id="vAus" hidden class="liste">
     <div class="abschnitt-kopf">
       <h2>Alle Antworten</h2>
-      <button class="mittelknopf" id="bExpTxt"><span data-ic="download"></span>Text</button>
-      <button class="mittelknopf" id="bExpCsv"><span data-ic="download"></span>Tabelle (CSV)</button>
+      <span id="ausTog"></span>
+      <button class="mittelknopf primaer" id="bExport"><span data-ic="download"></span>Exportieren</button>
     </div>
     <div class="liste" id="ausList"></div>
   </section>
@@ -62,7 +62,8 @@
 
 <dialog id="dKinder"><div class="dialog-kopf"><h2>Kinder</h2><button class="rundknopf" data-close aria-label="Schließen"><span data-ic="close"></span></button></div>
   <div class="dialog-inhalt">
-    <p class="muted klein" style="margin:0">Hier kannst du echte Namen eintragen. Sie bleiben nur auf diesem Gerät.</p>
+    <p class="muted klein" style="margin:0">Hier kannst du echte Namen eintragen. Sie bleiben nur auf diesem Gerät und werden nie an die iPads gesendet. Angezeigt werden sie nur, wenn „Klarnamen“ an ist. Schalte das aus, bevor du den Bildschirm an der Tafel zeigst.</p>
+    <div class="reihe"><span id="kTog"></span><span class="platz"></span><button class="mittelknopf klein warnung" id="bDelNames"><span data-ic="trash"></span>Alle Namen löschen</button></div>
     <div class="liste" id="pupils"></div>
   </div>
 </dialog>
@@ -81,6 +82,17 @@
   </div>
 </dialog>
 
+<dialog id="dExport"><div class="dialog-kopf"><h2>Exportieren</h2><button class="rundknopf" data-close aria-label="Schließen"><span data-ic="close"></span></button></div>
+  <div class="dialog-inhalt">
+    <label class="schalter"><input type="checkbox" id="expNames"> Klarnamen in die Datei schreiben</label>
+    <p class="muted klein" style="margin:0" id="expHint">Ohne Haken stehen nur die Pseudonyme in der Datei (z. B. „Blauer Falke 42“). So kannst du sie ablegen oder weitergeben, ohne dass Namen darin stehen.</p>
+    <div class="knopfreihe">
+      <button class="grossknopf leise" id="expTxt"><span data-ic="download"></span>Textdatei</button>
+      <button class="grossknopf leise" id="expCsv"><span data-ic="download"></span>Tabelle (CSV)</button>
+    </div>
+  </div>
+</dialog>
+
 <dialog id="dBulk"><div class="dialog-kopf"><h2>Mehrere Aufgaben einfügen</h2><button class="rundknopf" data-close aria-label="Schließen"><span data-ic="close"></span></button></div>
   <div class="dialog-inhalt">
     <p class="muted klein" style="margin:0">Eine Aufgabe pro Absatz (Leerzeile dazwischen). Bei mehreren Zeilen gilt die letzte Zeile als Frage, die Zeilen davor als Lesetext.</p>
@@ -91,8 +103,8 @@
 
 <script src="lib/peerjs.min.js"></script>
 <script src="lib/qrcode.js"></script>
-<script src="js/common.js?v=4"></script>
-<script src="js/net.js?v=4"></script>
-<script src="js/lehrer.js?v=4"></script>
+<script src="js/common.js?v=5"></script>
+<script src="js/net.js?v=5"></script>
+<script src="js/lehrer.js?v=5"></script>
 </body>
 </html>
