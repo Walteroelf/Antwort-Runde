@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Antwort-Runde · Lehrer-Gerät</title>
+<link rel="stylesheet" href="css/style.css?v=1">
+</head>
+<body>
+<div class="wrap">
+  <div class="card top">
+    <div class="qrbox" id="qr"></div>
+    <div class="grow">
+      <div class="muted small">Schüler-iPads: QR-Code scannen oder <b>schueler.html</b> öffnen und Code eingeben</div>
+      <div class="code" id="code">····</div>
+      <div class="row small muted"><span class="dot warn" id="netDot"></span><span id="netTxt">verbinde …</span><span id="link" class="small"></span></div>
+    </div>
+    <div class="row" style="flex-direction:column;align-items:stretch">
+      <button class="btn small" id="bFull">Code groß zeigen</button>
+      <button class="btn small danger" id="bNew">Neue Runde</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <b>Kinder (<span id="nOn">0</span> online, <span id="nAll">0</span> insgesamt)</b>
+    <div id="pupils" style="margin-top:10px" class="small muted">Noch niemand verbunden.</div>
+    <div class="small muted">Echte Namen kannst du hier eintragen. Sie bleiben nur auf diesem Gerät.</div>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <span><b>Tempo</b></span>
+      <div class="seg" id="pace"><button data-v="live">Gemeinsam</button><button data-v="self">Eigenes Tempo</button></div>
+      <span class="grow"></span>
+      <label class="row small"><input type="checkbox" id="autoRead"> automatisch vorlesen</label>
+      <label class="row small">Sprechtempo
+        <select id="rate"><option value="0.7">langsam</option><option value="0.9">normal</option><option value="1.05">zügig</option></select>
+      </label>
+    </div>
+    <div class="row" style="margin-top:12px" id="ctl">
+      <button class="btn" id="bPrev">◀</button>
+      <div class="grow" id="curTxt" style="text-align:center;font-weight:700"></div>
+      <button class="btn primary" id="bNext">Aufgabe 1 freigeben ▶</button>
+      <button class="btn danger" id="bStop">Pause</button>
+    </div>
+    <div class="small muted" style="margin-top:6px" id="paceHelp"></div>
+  </div>
+
+  <div class="tabs">
+    <div class="seg" id="tabs"><button data-v="tasks" class="on">Aufgaben</button><button data-v="ans">Antworten <span id="ansN"></span></button></div>
+    <span class="grow"></span>
+    <button class="btn small" id="bExpTxt">Antworten als Text</button>
+    <button class="btn small" id="bExpCsv">Als Tabelle (CSV)</button>
+  </div>
+
+  <div id="tasksView">
+    <div id="tasks"></div>
+    <div class="row">
+      <button class="btn" id="bAdd">+ Aufgabe</button>
+      <button class="btn" id="bBulk">Mehrere einfügen …</button>
+    </div>
+    <div class="card hidden" id="bulkBox" style="margin-top:12px">
+      <div class="small muted">Eine Aufgabe pro Absatz (Leerzeile dazwischen). Bei mehreren Zeilen gilt die letzte Zeile als Frage, die Zeilen davor als Lesetext.</div>
+      <textarea id="bulkTxt" style="margin:8px 0"></textarea>
+      <button class="btn primary" id="bBulkOk">Übernehmen</button>
+    </div>
+  </div>
+  <div id="ansView" class="hidden"></div>
+</div>
+
+<div id="big" class="hidden" style="position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:9"></div>
+
+<script src="lib/peerjs.min.js"></script>
+<script src="lib/qrcode.js"></script>
+<script src="js/common.js?v=1"></script>
+<script src="js/net.js?v=1"></script>
+<script src="js/lehrer.js?v=1"></script>
+</body>
+</html>
