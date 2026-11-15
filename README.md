@@ -85,7 +85,7 @@ Die Lehrer-Seite muss offen bleiben, solange die Kinder antworten. Lädst du sie
 
 *Technische Beschreibung, keine Rechtsberatung. Die Freigabe liegt bei der Schule.*
 
-- Keine Konten, keine Cookies, kein Tracking, keine Bibliotheken von Dritten (PeerJS und QR-Code liegen in `lib/`).
+- Keine Konten, keine Cookies, kein Tracking. Fremde Bibliotheken (PeerJS und qrcode-generator, beide MIT) und Schriften liegen lokal im Projekt (`lib/`, `schriften/`) und werden nicht aus dem Internet nachgeladen. Einzige Verbindung nach außen: der öffentliche PeerJS-Vermittlungsdienst (`0.peerjs.com`), der Lehrer-Gerät und iPads zusammenbringt.
 - Kinder erscheinen nur mit Pseudonym. Echte Namen trägst du selbst am Lehrer-Gerät ein, sie verlassen es nie. Sie werden nur angezeigt, wenn du es einschaltest, und stehen nur in Exportdateien, wenn du es dort ausdrücklich wählst. „Neue Runde“ löscht sie.
 - Antworten (Text, Audio) laufen per WebRTC **direkt vom iPad zum Lehrer-Gerät**, verschlüsselt (DTLS). Der öffentliche PeerJS-Server (`0.peerjs.com`) vermittelt nur den Verbindungsaufbau und sieht Raumcode, zufällige Gerätekennungen und IP-Adressen, aber keine Inhalte. Bei Bedarf nutzt PeerJS einen STUN-Server von Google und TURN-Server (dann laufen die verschlüsselten Daten darüber).
 - Die Seiten kommen von GitHub Pages (IP-Adresse sichtbar wie bei jeder Webseite).
