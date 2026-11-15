@@ -568,6 +568,57 @@
 
   /* ---------- Export ---------- */
   const stamp = () => new Date().toISOString().slice(0, 10);
+
+  /* ---------- Aufgaben sichern und laden (Datei mit Aufgaben, Bildern und eigenen Aufnahmen) ---------- */
+  const blobToUrl = b => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(b); });
+  function urlToBlob(u, okType) {   // data:-Adresse in Blob umwandeln (ohne fetch, die Seite erlaubt das nicht)
+    const m = /^data:([a-z0-9.+\/-]+)(;[^,]*)?,(.*)$/is.exec(u || ''); if (!m || !okType.test(m[1])) return null;
+    const bin = atob(m[3]); if (bin.length > 15e6) return null;
+    const a = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i);
+    return new Blob([a], { type: m[1] });
+  }
+  async function exportTasks() {
+    const out = { app: 'antwort-runde', version: 1, exported: new Date().toISOString(), tasks: [] };
+    for (const t of S.tasks) {
+      const o = { text: t.text, q: t.q, mode: t.mode, photo: !!t.photo };
+      const im = t.image && images.get(t.id); if (im) o.image = await blobToUrl(im.blob);
+      const v = t.voice && voices.get(t.id); if (v) o.voice = await blobToUrl(v.blob);
+      out.tasks.push(o);
+    }
+    AR.download('aufgaben-' + stamp() + '.json', JSON.stringify(out), 'application/json');
+  }
+  let impTasks = null;
+  async function readImport(file) {
+    let d; try { d = JSON.parse(await file.text()); } catch (e) { d = null; }
+    if (!d || d.app !== 'antwort-runde' || !Array.isArray(d.tasks) || !d.tasks.length) { alert('Diese Datei ist keine Aufgaben-Datei der Antwort-Runde.'); return; }
+    impTasks = d.tasks.slice(0, 200);
+    const empty = S.tasks.length === 1 && !S.tasks[0].text && !S.tasks[0].q && !S.tasks[0].image;
+    if (empty) { applyImport('replace'); return; }
+    $('impInfo').textContent = impTasks.length + (impTasks.length === 1 ? ' Aufgabe' : ' Aufgaben') + ' in der Datei. Du hast schon ' + S.tasks.length + '.';
+    hint($('impHint'), 'warn', '<b>Ersetzen</b> löscht deine bisherigen Aufgaben samt Bildern, Aufnahmen und den dazugehörigen Antworten von diesem Gerät.');
+    $('dImport').showModal();
+  }
+  function applyImport(how) {
+    if (!impTasks) return;
+    if (how === 'replace') {
+      if (vrec) stopVRec(true);
+      S.tasks.forEach(t => { idb.del('v|' + t.id); idb.del('i|' + t.id); Object.keys(S.answers[t.id] || {}).forEach(pid => dropMedia(t.id + '|' + pid)); });
+      voices.clear(); images.clear(); S.tasks = []; S.answers = {}; S.current = -1; vi = 0;
+    } else if (S.tasks.length === 1 && !S.tasks[0].text && !S.tasks[0].q && !S.tasks[0].image) S.tasks = [];
+    impTasks.forEach(o => {
+      if (!o || typeof o !== 'object') return;
+      const t = newTask();
+      t.text = String(o.text || '').slice(0, 20000); t.q = String(o.q || '').slice(0, 5000);
+      t.mode = ['text', 'both', 'audio', 'none'].includes(o.mode) ? o.mode : 'text'; t.photo = !!o.photo && t.mode !== 'none';
+      const ib = urlToBlob(o.image, /^image\/(jpeg|png|webp|gif)$/i);
+      if (ib) { const ts = Date.now(); images.set(t.id, { blob: ib, ts }); idb.put('i|' + t.id, { blob: ib, ts }); t.image = ts; }
+      const vb = urlToBlob(o.voice, /^audio\/(mp4|mpeg|webm|ogg|wav|x-wav|x-m4a|aac)$/i);
+      if (vb) { const ts = Date.now(); voices.set(t.id, { blob: vb, ts }); idb.put('v|' + t.id, { blob: vb, ts }); t.voice = ts; }
+      S.tasks.push(t);
+    });
+    if (!S.tasks.length) S.tasks.push(newTask());
+    impTasks = null; openTask = null; save(); broadcast(); $('dImport').close(); drawHead(); showView('aufgaben'); drawTasks();
+  }
   function exportTxt(nm) {
     let out = 'Antwort-Runde ' + AR.fmtDate(Date.now()) + '\n\n';
     S.tasks.forEach((t, i) => {
@@ -592,6 +643,10 @@
     d.addEventListener('click', e => { if (e.target === d || e.target.closest('[data-close]')) d.close(); });
   });
   $('reiter').onclick = e => { const b = e.target.closest('button'); if (b) showView(b.dataset.v); };
+  $('bTaskExp').onclick = () => { if (S.tasks.length === 1 && !S.tasks[0].text && !S.tasks[0].q && !S.tasks[0].image) { alert('Es gibt noch keine Aufgaben zum Sichern.'); return; } exportTasks(); };
+  $('bTaskImp').onclick = () => AR.pickFile('.json,application/json', readImport);
+  $('impAdd').onclick = () => applyImport('add');
+  $('impRep').onclick = () => { if (confirm('Bisherige Aufgaben wirklich durch die Datei ersetzen?')) applyImport('replace'); };
   $('bToLive').onclick = () => showView('live');
   $('bCode').onclick = () => { drawCode(); $('dCode').showModal(); };
   $('bKinder').onclick = () => { $('dKinder').showModal(); drawKinder(); };

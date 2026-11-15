@@ -84,6 +84,7 @@ window.AR = window.AR || {};
     sliders: '<path d="M4 7h9M19 7h1M4 17h1M11 17h9"/><circle cx="16" cy="7" r="2.6"/><circle cx="8" cy="17" r="2.6"/>',
     qr: '<rect x="3.5" y="3.5" width="6.5" height="6.5" rx="1"/><rect x="14" y="3.5" width="6.5" height="6.5" rx="1"/><rect x="3.5" y="14" width="6.5" height="6.5" rx="1"/><path d="M14 14h3v3M20.5 14v.1M14 20.5h.1M17 20.5h3.5V17"/>',
     users: '<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.6 2.7-6 6-6s6 2.4 6 6"/><circle cx="17.5" cy="9" r="2.4"/><path d="M17.5 14c2.4 0 4 1.9 4 4.5"/>',
+    upload: '<path d="M12 16V5M7 9l5-5 5 5M5 20h14"/>',
     download: '<path d="M12 4v11M7 11l5 5 5-5M5 20h14"/>',
     dice: '<rect x="4" y="4" width="16" height="16" rx="4"/><circle class="f" cx="9" cy="9" r="1.2"/><circle class="f" cx="15" cy="15" r="1.2"/><circle class="f" cx="15" cy="9" r="1.2"/><circle class="f" cx="9" cy="15" r="1.2"/>',
     hourglass: '<path d="M7 3h10M7 21h10M8 3v3.5l4 5.5-4 5.5V21M16 3v3.5L12 12l4 5.5V21"/>',
@@ -110,6 +111,7 @@ window.AR = window.AR || {};
     const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(bmp, 0, 0, c.width, c.height);
     return new Promise(res => c.toBlob(res, 'image/jpeg', q || 0.82));
   };
+  AR.pickFile = function (accept, cb) { const i = document.createElement('input'); i.type = 'file'; i.accept = accept; i.onchange = () => { if (i.files && i.files[0]) cb(i.files[0]); }; i.click(); };
   AR.pickImage = function (cb) { const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.onchange = () => { if (i.files && i.files[0]) cb(i.files[0]); }; i.click(); };
   AR.fillIcons = () => document.querySelectorAll('[data-ic]').forEach(e => { e.innerHTML = AR.icon(e.dataset.ic); });
   document.addEventListener('DOMContentLoaded', AR.fillIcons);

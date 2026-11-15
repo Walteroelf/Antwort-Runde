@@ -6,7 +6,7 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; font-src 'self'; connect-src 'self' https://0.peerjs.com wss://0.peerjs.com; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Antwort-Runde · Lehrer-Gerät</title>
-<link rel="stylesheet" href="css/style.css?v=14">
+<link rel="stylesheet" href="css/style.css?v=15">
 </head>
 <body>
 <header class="markise"><div class="kopf">
@@ -33,6 +33,11 @@
     </div>
     <p class="muted klein" style="margin:0">Tippe auf eine Aufgabe, um sie zu bearbeiten. Text, Frage und eigene Stimme sind jeweils optional.</p>
     <div class="liste" id="tasks"></div>
+    <div class="reihe">
+      <button class="mittelknopf" id="bTaskExp"><span data-ic="download"></span>Aufgaben sichern</button>
+      <button class="mittelknopf" id="bTaskImp"><span data-ic="upload"></span>Aufgaben laden</button>
+    </div>
+    <p class="muted klein" style="margin:0">Die Datei enthält nur Aufgaben (Texte, Fragen, Bilder, deine Aufnahmen). Keine Antworten, keine Kinder, keine Namen. So kannst du Aufgaben zu Hause vorbereiten und in der Schule laden, oder sie sichern.</p>
     <button class="grossknopf weiter" id="bToLive">Weiter: Durchführen<span data-ic="right"></span></button>
   </section>
 
@@ -114,6 +119,17 @@
 
 <dialog id="dImg" style="width:min(900px,calc(100vw - 24px))"><div class="dialog-kopf"><h2>Foto</h2><button class="rundknopf" data-close aria-label="Schließen"><span data-ic="close"></span></button></div><div class="dialog-inhalt"><img id="bigImg" alt="Foto-Antwort" style="width:100%;height:auto;border-radius:12px"></div></dialog>
 
+<dialog id="dImport"><div class="dialog-kopf"><h2>Aufgaben laden</h2><button class="rundknopf" data-close aria-label="Schließen"><span data-ic="close"></span></button></div>
+  <div class="dialog-inhalt">
+    <p style="margin:0" id="impInfo"></p>
+    <div class="knopfreihe">
+      <button class="grossknopf leise" id="impAdd"><span data-ic="plus"></span>Hinzufügen</button>
+      <button class="grossknopf leise" id="impRep"><span data-ic="trash"></span>Ersetzen</button>
+    </div>
+    <div id="impHint"></div>
+  </div>
+</dialog>
+
 <dialog id="dBulk"><div class="dialog-kopf"><h2>Mehrere Aufgaben einfügen</h2><button class="rundknopf" data-close aria-label="Schließen"><span data-ic="close"></span></button></div>
   <div class="dialog-inhalt">
     <p class="muted klein" style="margin:0">Eine Aufgabe pro Absatz (Leerzeile dazwischen). Bei mehreren Zeilen gilt die letzte Zeile als Frage, die Zeilen davor als Lesetext.</p>
@@ -124,8 +140,8 @@
 
 <script src="lib/peerjs.min.js"></script>
 <script src="lib/qrcode.js"></script>
-<script src="js/common.js?v=14"></script>
-<script src="js/net.js?v=14"></script>
-<script src="js/lehrer.js?v=14"></script>
+<script src="js/common.js?v=15"></script>
+<script src="js/net.js?v=15"></script>
+<script src="js/lehrer.js?v=15"></script>
 </body>
 </html>

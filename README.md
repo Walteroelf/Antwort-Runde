@@ -34,6 +34,10 @@ Die Zuordnung Klarname → Kind hängt an einer zufälligen Gerätekennung im Br
 - **Beitritt „Nachfragen“:** Ein neues iPad wartet. Bei „Zulassen“ wählst du „Ist wieder: …“ oder „Neues Kind“.
 - **Vorbeugen:** Sobald alle da sind, den Beitritt auf „Gesperrt“ stellen. Ein Kind, das sich eine neue Kennung besorgt, sieht „Diese Runde ist gesperrt“ und muss sich bei dir melden. Oben rechts auf dem iPad steht das Pseudonym des Kindes. Frag im Zweifel danach.
 
+## Aufgaben sichern und laden
+
+Im Reiter „Aufgaben“ unten: **Aufgaben sichern** speichert alle Aufgaben mit Texten, Fragen, Antwortarten, Bildern und deinen eigenen Aufnahmen als Datei (`aufgaben-JJJJ-MM-TT.json`). **Aufgaben laden** liest eine solche Datei. Sind schon Aufgaben da, wählst du **Hinzufügen** oder **Ersetzen** (Ersetzen löscht die bisherigen Aufgaben samt Antworten). So lassen sich Aufgaben zu Hause vorbereiten, auf ein anderes Gerät mitnehmen oder sichern, falls der Browser seine Daten löscht. Die Datei enthält keine Antworten, Kinder oder Klarnamen. Sie kann durch Aufnahmen und Bilder einige Megabyte groß werden.
+
 ## Bilder und Fotos
 
 - **Bild zur Aufgabe:** In der Aufgabe „Bild oder Foto wählen“. Das Bild wird verkleinert und erscheint in der Aufgabenkarte auf den iPads.
