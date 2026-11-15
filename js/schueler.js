@@ -5,6 +5,9 @@
   const KID = 'ar.kid', ANS = 'ar.kid.ans';
   let me = AR.store.get(KID, null);              // {pid, name, room}
   let A = AR.store.get(ANS, { round: '', answers: {}, drafts: {} });  // answers[taskId] = {text, ts, acked, audio}
+  const voice = {};                              // taskId -> {ts, url}: Vorlese-Aufnahme der Lehrkraft
+  const asked = new Set();
+  let vplay = null;
   const rec = {};                                // taskId -> {buf, mime, url, ts, acked}
   let net = null, st = null, ownIdx = 0, shownId = null, shownSig = '', interacted = false, speaking = false;
   let recorder = null, recStream = null, recTimer = null, recChunks = [], recTask = null, recog = null;
@@ -21,7 +24,7 @@
         document.getElementById('netDot').className = 'dot ' + (s === 'open' ? 'ok' : s === 'connecting' ? 'warn' : 'bad');
         document.getElementById('netTxt').textContent = s === 'open' ? 'verbunden' : s === 'connecting' ? 'verbinde …' : 'getrennt, versuche erneut';
       },
-      onOpen() { net.send({ t: 'hello', pid: me.pid, name: me.name }); resendAll(); },
+      onOpen() { asked.clear(); net.send({ t: 'hello', pid: me.pid, name: me.name }); resendAll(); },
       onData: onData
     });
   }
@@ -29,13 +32,27 @@
     if (!d || !d.t) return;
     if (d.t === 'state') {
       if (A.round !== d.round) { A = { round: d.round, answers: {}, drafts: {} }; for (const k in rec) delete rec[k]; saveA(); }
-      const first = !st; st = d; render(first);
+      const first = !st; st = d; askVoices(); render(first);
+    } else if (d.t === 'taskaudio') {
+      if (voice[d.task]) URL.revokeObjectURL(voice[d.task].url);
+      voice[d.task] = { ts: d.ts, url: URL.createObjectURL(new Blob([d.audio], { type: d.mime || 'audio/mp4' })) };
+      const t = curTask(); if (t && t.id === d.task) updateReadBtn(t);
     } else if (d.t === 'ack') {
       const a = A.answers[d.task]; if (a && a.ts === d.ts) { a.acked = true; saveA(); }
       if (rec[d.task] && rec[d.task].ts === d.ts) rec[d.task].acked = true;
       if (st && curTask() && curTask().id === d.task) renderStatus();
     }
   }
+  function askVoices() {
+    st.tasks.forEach(t => {
+      if (!t.voice) return;
+      const key = t.id + '|' + t.voice;
+      if ((voice[t.id] && voice[t.id].ts === t.voice) || asked.has(key)) return;
+      asked.add(key); net.send({ t: 'needaudio', task: t.id });
+    });
+  }
+  function hasVoice(t) { return !!(t && t.voice); }
+  function voiceReady(t) { return hasVoice(t) && voice[t.id] && voice[t.id].ts === t.voice; }
   function resendAll() {
     for (const id in A.answers) { const a = A.answers[id]; if (!a.acked) sendAnswer(id); }
   }
@@ -74,7 +91,7 @@
     const mode = t.mode || 'text';
     let h = '<div class="head"><span>' + AR.esc(me.name) + '</span><span>Aufgabe ' + (i + 1) + ' von ' + n + '</span></div>';
     h += '<div class="qbox">' + (t.text ? '<p class="txt">' + AR.esc(t.text) + '</p>' : '') + (t.q ? '<p class="q">' + AR.esc(t.q) + '</p>' : '') + '</div>';
-    if (AR.tts.ok && (t.text || t.q)) h += '<button class="btn primary read" id="bRead">🔊 Vorlesen</button>';
+    if (hasVoice(t) || (AR.tts.ok && (t.text || t.q))) h += '<button class="btn primary read" id="bRead">🔊 Vorlesen</button>';
     if (mode !== 'audio') {
       h += '<textarea id="ans" placeholder="Schreibe hier deine Antwort …" autocapitalize="sentences" spellcheck="false"></textarea>';
       if (canTalk) h += '<button class="btn bigbtn" id="bTalk">🎤 Sprechen und aufschreiben lassen</button>';
@@ -96,8 +113,8 @@
     const p = document.getElementById('bPrev'), nx = document.getElementById('bNext');
     if (p) p.onclick = () => { ownIdx = Math.max(0, ownIdx - 1); render(true); };
     if (nx) nx.onclick = () => { ownIdx = Math.min(n - 1, ownIdx + 1); render(true); };
-    renderStatus();
-    if (isNew && st.autoRead && interacted) setTimeout(() => toggleRead(t, true), 300);
+    renderStatus(); updateReadBtn(t);
+    if (isNew && st.autoRead && interacted) { const b = document.getElementById('bRead'); if (b) { b._wantAuto = true; setTimeout(() => updateReadBtn(t), 300); } }
   }
 
   function renderStatus() {
@@ -108,14 +125,29 @@
   }
 
   /* ---------- Vorlesen ---------- */
+  function updateReadBtn(t) {
+    const b = document.getElementById('bRead'); if (!b) return;
+    const wait = hasVoice(t) && !voiceReady(t);
+    b.disabled = wait; b.textContent = wait ? '⏳ Aufnahme lädt …' : speaking ? '⏹ Stopp' : '🔊 Vorlesen';
+    if (!wait && !b._autoDone && t.id === shownId && b._wantAuto) { b._autoDone = true; toggleRead(t, true); }
+  }
+  function endSpeak() { speaking = false; const bb = document.getElementById('bRead'); if (bb && !bb.disabled) bb.textContent = '🔊 Vorlesen'; }
   function toggleRead(t, autostart) {
     const b = document.getElementById('bRead');
-    if (speaking && !autostart) { AR.tts.stop(); speaking = false; if (b) b.textContent = '🔊 Vorlesen'; return; }
+    if (speaking && !autostart) { stopSpeech(); if (b) b.textContent = '🔊 Vorlesen'; return; }
+    if (hasVoice(t)) {
+      if (!voiceReady(t)) return;
+      stopSpeech(); speaking = true; if (b) b.textContent = '⏹ Stopp';
+      vplay = new Audio(voice[t.id].url); vplay.onended = vplay.onerror = endSpeak;
+      vplay.play().catch(endSpeak);
+      return;
+    }
     speaking = true; if (b) b.textContent = '⏹ Stopp';
-    AR.tts.speak([t.text, t.q], st.rate, () => { speaking = false; const bb = document.getElementById('bRead'); if (bb) bb.textContent = '🔊 Vorlesen'; });
+    AR.tts.speak([t.text, t.q], st.rate, endSpeak);
   }
+  function stopSpeech() { AR.tts.stop(); if (vplay) { vplay.onended = vplay.onerror = null; vplay.pause(); vplay = null; } speaking = false; }
   function stopAll() {
-    AR.tts.stop(); speaking = false;
+    stopSpeech();
     if (recog) { try { recog.abort(); } catch (e) { /* egal */ } recog = null; }
     if (recorder && recorder.state !== 'inactive') { try { recorder.onstop = null; recorder.stop(); } catch (e) { /* egal */ } }
     cleanupRec();
@@ -157,7 +189,7 @@
   }
   async function startRec(t) {
     try {
-      AR.tts.stop(); speaking = false;
+      stopSpeech();
       recStream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const types = ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm']; const mt = types.find(x => MediaRecorder.isTypeSupported(x)) || '';
       recorder = new MediaRecorder(recStream, mt ? { mimeType: mt } : undefined); recChunks = []; recTask = t.id;

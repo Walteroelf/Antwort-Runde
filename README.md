@@ -17,6 +17,7 @@ Reine HTML/JavaScript-Seiten ohne Build-Schritt, geeignet für GitHub Pages. Gle
    - *Schreiben oder Einsprechen als Text*
    - *Text oder Sprachaufnahme*
    - *nur Sprachaufnahme*
+   Zusätzlich kannst du jede Aufgabe **mit eigener Stimme einsprechen** („🎙️ Mit eigener Stimme einsprechen“). Die Kinder hören dann deine Aufnahme statt der iPad-Stimme. Text und Frage gehören in dieselbe Aufnahme.
    „Mehrere einfügen“ legt aus einem Text mit Leerzeilen mehrere Aufgaben an (letzte Zeile eines Absatzes = Frage).
 3. **Kinder:** QR-Code scannen, „Los geht’s“. Jedes Kind bekommt ein Pseudonym wie „Blauer Falke 42“ (mit 🎲 änderbar). Ab dann verbindet sich das iPad von selbst wieder.
 4. **Freigeben:**
@@ -29,7 +30,9 @@ Die Kinder sehen nach dem Abschicken „✓ Angekommen bei der Lehrkraft“. Än
 
 ## Vorlesen
 
-Nutzt die Stimme des iPads (Einstellungen → Bedienungshilfen → Gesprochene Inhalte → Stimmen; eine „erweiterte“ deutsche Stimme klingt deutlich besser). Funktioniert offline. Sprechtempo und „automatisch vorlesen“ stellst du am Lehrer-Gerät ein. Das automatische Vorlesen startet erst, nachdem das Kind einmal getippt hat (Regel von Safari). Der Knopf „🔊 Vorlesen“ geht immer.
+**Eigene Stimme:** Hat eine Aufgabe eine Aufnahme von dir, spielt das iPad diese ab (bis 3 Minuten). Die Aufnahme bleibt auf deinem Gerät gespeichert und wird beim Verbinden einmal an jedes iPad übertragen („Aufnahme lädt …“). Ändern oder löschen kannst du sie jederzeit, Änderungen kommen sofort bei den Kindern an. Das Lehrer-Gerät muss dafür online sein. Sprachaufnahmen bleiben beim Start einer „Neuen Runde“ erhalten.
+
+**iPad-Stimme (ohne Aufnahme):** Nutzt die Stimme des iPads (Einstellungen → Bedienungshilfen → Gesprochene Inhalte → Stimmen; eine „erweiterte“ deutsche Stimme klingt deutlich besser). Funktioniert offline. Sprechtempo und „automatisch vorlesen“ stellst du am Lehrer-Gerät ein. Das automatische Vorlesen startet erst, nachdem das Kind einmal getippt hat (Regel von Safari). Der Knopf „🔊 Vorlesen“ geht immer.
 
 ## Einsprechen
 

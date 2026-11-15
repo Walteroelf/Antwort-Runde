@@ -9,9 +9,11 @@
   const conns = new Map();     // conn -> pid
   const online = new Set();    // pid
   const audio = new Map();     // 'task|pid' -> {blob}
+  const voices = new Map();    // taskId -> {blob, ts}: Vorlese-Aufnahmen der Lehrkraft
+  let vrec = null;             // laufende Aufnahme {task, recorder, stream, chunks, timer}
   let host = null, takenTries = 0, tab = 'tasks';
 
-  function newTask() { return { id: AR.rid(6), text: '', q: '', mode: 'text' }; }
+  function newTask() { return { id: AR.rid(6), text: '', q: '', mode: 'text', voice: 0 }; }
   function save() { AR.store.set(KEY, S); }
 
   /* ---------- Audio-Ablage (IndexedDB, mit Notlösung im Speicher) ---------- */
@@ -38,7 +40,15 @@
         } catch (e) { res([]); }
       });
     },
-    clear() { try { if (this.db) this.db.transaction('a', 'readwrite').objectStore('a').clear(); } catch (e) { /* egal */ } }
+    del(k) { try { if (this.db) this.db.transaction('a', 'readwrite').objectStore('a').delete(k); } catch (e) { /* egal */ } },
+    // Antwort-Aufnahmen löschen, Vorlese-Aufnahmen ('v|…') bleiben
+    clear() {
+      try {
+        if (!this.db) return;
+        const os = this.db.transaction('a', 'readwrite').objectStore('a'), req = os.openCursor();
+        req.onsuccess = () => { const c = req.result; if (c) { if (!String(c.key).startsWith('v|')) c.delete(); c.continue(); } };
+      } catch (e) { /* egal */ }
+    }
   };
 
   /* ---------- Hilfen ---------- */
@@ -86,6 +96,9 @@
       conns.set(c, d.pid); online.add(d.pid);
       S.pupils[d.pid] = { name: String(d.name || d.pid).slice(0, 40), last: Date.now() };
       save(); c.send(stateMsg()); drawPupils(); drawAnswers();
+    } else if (d.t === 'needaudio' && d.task) {
+      const v = voices.get(d.task);
+      if (v) v.blob.arrayBuffer().then(buf => c.send({ t: 'taskaudio', task: d.task, ts: v.ts, audio: buf, mime: v.blob.type || 'audio/mp4' }));
     } else if (d.t === 'answer' && d.pid && d.task) {
       if (d.round !== S.round) { c.send({ t: 'ack', task: d.task, ts: d.ts }); return; }
       if (!S.tasks.some(t => t.id === d.task)) { c.send({ t: 'ack', task: d.task, ts: d.ts }); return; }
@@ -166,7 +179,9 @@
         '<div class="row" style="margin-top:8px"><span class="small muted">Antwort per</span><select data-f="mode">' +
         '<option value="text">Schreiben oder Einsprechen als Text</option>' +
         '<option value="both">Text oder Sprachaufnahme</option>' +
-        '<option value="audio">nur Sprachaufnahme</option></select></div>';
+        '<option value="audio">nur Sprachaufnahme</option></select></div>' +
+        '<div class="voice" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line)"></div>';
+      drawVoice(el.querySelector('.voice'), t);
       el.querySelector('[data-f=text]').value = t.text; el.querySelector('[data-f=q]').value = t.q; el.querySelector('[data-f=mode]').value = t.mode;
       el.oninput = el.onchange = e => { const f = e.target.dataset.f; if (f) { t[f] = e.target.value; save(); pushSoon(); drawAnswersSoon(); } };
       el.onclick = e => {
@@ -175,6 +190,8 @@
         if (a === 'del') {
           const has = Object.keys(S.answers[t.id] || {}).length;
           if (has && !confirm('Zu dieser Aufgabe gibt es ' + has + ' Antworten. Wirklich löschen?')) return;
+          if (vrec && vrec.task === t.id) stopVRec(true);
+          voices.delete(t.id); idb.del('v|' + t.id);
           S.tasks.splice(i, 1); delete S.answers[t.id]; if (!S.tasks.length) S.tasks.push(newTask());
           if (S.current >= S.tasks.length) S.current = S.tasks.length - 1;
         }
@@ -186,6 +203,51 @@
     });
     drawControl();
   }
+
+  /* ---------- Vorlese-Aufnahme der Lehrkraft ---------- */
+  function drawVoice(box, t) {
+    box.innerHTML = '';
+    const v = voices.get(t.id), now = vrec && vrec.task === t.id;
+    const mk = (txt, cls, fn) => { const b = document.createElement('button'); b.className = 'btn small ' + (cls || ''); b.textContent = txt; b.onclick = fn; return b; };
+    const row = document.createElement('div'); row.className = 'row'; box.appendChild(row);
+    if (!window.MediaRecorder || !navigator.mediaDevices) { row.textContent = 'Aufnehmen geht auf diesem Gerät nicht.'; return; }
+    if (now) {
+      const l = document.createElement('b'); l.style.color = 'var(--bad)'; l.textContent = '● Aufnahme läuft …'; row.appendChild(l);
+      row.appendChild(mk('⏹ Fertig', 'primary', () => stopVRec()));
+      return;
+    }
+    if (t.voice && v) {
+      const au = document.createElement('audio'); au.controls = true; au.src = URL.createObjectURL(v.blob); au.style.height = '38px'; row.appendChild(au);
+      row.appendChild(mk('🎙️ Neu aufnehmen', '', () => startVRec(t)));
+      row.appendChild(mk('Aufnahme löschen', 'danger', () => { t.voice = 0; voices.delete(t.id); idb.del('v|' + t.id); save(); broadcast(); drawTasks(); }));
+      const h = document.createElement('div'); h.className = 'small muted'; h.style.width = '100%'; h.textContent = 'Die Kinder hören deine Aufnahme statt der iPad-Stimme (Text und Frage in einer Aufnahme).'; box.appendChild(h);
+      return;
+    }
+    row.appendChild(mk('🎙️ Mit eigener Stimme einsprechen', '', () => startVRec(t)));
+    const h = document.createElement('span'); h.className = 'small muted';
+    h.textContent = t.voice ? 'Die Aufnahme fehlt auf diesem Gerät. Bitte neu aufnehmen.' : 'Ohne Aufnahme liest die iPad-Stimme vor.'; row.appendChild(h);
+  }
+  async function startVRec(t) {
+    if (vrec) stopVRec(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const types = ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm']; const mt = types.find(x => MediaRecorder.isTypeSupported(x)) || '';
+      const recorder = new MediaRecorder(stream, mt ? { mimeType: mt } : undefined);
+      const r = vrec = { task: t.id, recorder, stream, chunks: [], timer: null, discard: false };
+      recorder.ondataavailable = e => { if (e.data && e.data.size) r.chunks.push(e.data); };
+      recorder.onstop = () => {
+        clearTimeout(r.timer); stream.getTracks().forEach(x => x.stop());
+        if (vrec === r) vrec = null;
+        const blob = new Blob(r.chunks, { type: recorder.mimeType || mt || 'audio/mp4' });
+        if (!r.discard && blob.size) {
+          const ts = Date.now(); voices.set(t.id, { blob, ts }); idb.put('v|' + t.id, { blob, ts }); t.voice = ts; save(); broadcast();
+        }
+        drawTasks();
+      };
+      recorder.start(); r.timer = setTimeout(() => stopVRec(), 180000); drawTasks();
+    } catch (e) { vrec = null; drawTasks(); alert('Das Mikrofon ist nicht erlaubt. Bitte im Browser das Mikrofon für diese Seite erlauben.'); }
+  }
+  function stopVRec(discard) { if (vrec && vrec.recorder.state === 'recording') { vrec.discard = !!discard; vrec.recorder.stop(); } }
 
   /* ---------- Antworten ---------- */
   let ansTimer = null;
@@ -280,7 +342,8 @@
 
   /* ---------- Start ---------- */
   idb.open().then(idb.all.bind(idb)).then(rows => {
-    rows.forEach(([k, v]) => { const [r, ...rest] = k.split('|'); if (r === S.round) audio.set(rest.join('|'), v); });
+    rows.forEach(([k, v]) => { const [r, ...rest] = k.split('|'); if (r === 'v') voices.set(rest.join('|'), v); else if (r === S.round) audio.set(rest.join('|'), v); });
+    drawTasks();
     drawAnswers();
   });
   save(); drawHeader(); drawTasks(); drawPupils(); drawAnswers(); startHost();
