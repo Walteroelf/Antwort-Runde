@@ -34,7 +34,7 @@ Die Kinder sehen nach dem Abschicken „✓ Angekommen bei der Lehrkraft“. Än
 
 ## Bildschirm auf dem iPad
 
-Alles passt ohne Scrollen auf einen Bildschirm. Im **Querformat** steht die Antwort links und die Frage rechts, im Hochformat die Frage oben und die Antwort darunter. Ein sehr langer Text scrollt nur innerhalb der Aufgabenkarte.
+Alles passt ohne Scrollen auf einen Bildschirm. Im **Querformat** steht die Frage links und die Antwort rechts, im Hochformat die Frage oben und die Antwort darunter. Ein sehr langer Text scrollt nur innerhalb der Aufgabenkarte.
 
 ## Datenschutz-Einstellungen (Zahnrad)
 
