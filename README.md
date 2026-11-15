@@ -26,6 +26,30 @@ Zahnrad oben rechts: *Antworten sofort übertragen*, *Tempo* (Gemeinsam = alle s
 
 Die Kinder sehen nach dem Abschicken „✓ Angekommen bei der Lehrkraft“. Ändern und nochmal abschicken ist möglich, die neue Antwort ersetzt die alte. Bricht die Verbindung ab, sendet das iPad die Antwort später automatisch nach.
 
+## Bilder und Fotos
+
+- **Bild zur Aufgabe:** In der Aufgabe „Bild oder Foto wählen“. Das Bild wird verkleinert und erscheint in der Aufgabenkarte auf den iPads.
+- **Foto als Antwort:** Pro Aufgabe der Haken „Kinder dürfen ein Foto als Antwort machen“. Dann gibt es auf dem iPad einen Knopf „Foto“ (Kamera oder Fotos wählen). Das Foto wird auf dem iPad verkleinert und neu gespeichert, dabei verschwinden versteckte Daten wie der Standort. Du siehst es bei den Antworten und kannst es antippen, um es groß zu sehen. In Exportdateien steht nur „[Foto]“.
+- Kinder sollen nur Arbeitsergebnisse fotografieren (Heft, Zeichnung, Legearbeit), keine Gesichter. Der Hinweis erscheint auch in der Aufgabe.
+
+## Bildschirm auf dem iPad
+
+Alles passt ohne Scrollen auf einen Bildschirm. Im **Querformat** steht die Antwort links und die Frage rechts, im Hochformat die Frage oben und die Antwort darunter. Ein sehr langer Text scrollt nur innerhalb der Aufgabenkarte.
+
+## Datenschutz-Einstellungen (Zahnrad)
+
+Unter jeder Einstellung zeigt die App an, was sie für die Daten bedeutet (grün = geschützt, orange = Achtung).
+
+| Einstellung | Standard | Wirkung |
+|---|---|---|
+| Spracherkennung erlauben | aus | Ein: Der Knopf „Sprechen“ schickt Ton an Apple. Aus: Der Knopf fehlt. |
+| Antworten sofort übertragen | aus | Ein: Du siehst auch unfertige Texte. Aus: Nur nach „Abschicken“. |
+| Neue Kinder dürfen beitreten | offen | *Offen:* jeder mit Code. *Nachfragen:* du bestätigst jedes neue Kind (Kinderliste, „n warten“). *Gesperrt:* niemand Neues, bekannte Kinder kommen wieder. |
+| Automatisch löschen | 24 Stunden | Antworten, Aufnahmen, Fotos und inaktive Kinder samt Klarnamen werden nach der Zeit gelöscht. Bei bestehenden Installationen bleibt es zunächst „nie“. |
+| Runde beenden und alles löschen | | Löscht alles auf deinem Gerät, die iPads löschen Entwürfe und Antworten und zeigen „Runde beendet“. |
+
+Zusätzlich: Die Seiten erlauben per Sicherheitsvorgabe (CSP) nur Verbindungen zur eigenen Seite und zum PeerJS-Server, und geben beim Aufruf keine Herkunftsadresse weiter. Auf dem iPad verfallen Entwürfe und Antworten nach 24 Stunden von selbst. Wer einen eigenen PeerJS-Server nutzt, muss dessen Adresse in `js/net.js` und in der `connect-src`-Zeile der HTML-Dateien eintragen.
+
 ## Vorlesen
 
 **Eigene Stimme:** Hat eine Aufgabe eine Aufnahme von dir, spielt das iPad diese ab (bis 3 Minuten). Die Aufnahme bleibt auf deinem Gerät gespeichert und wird beim Verbinden einmal an jedes iPad übertragen („Aufnahme lädt …“). Ändern oder löschen kannst du sie jederzeit, Änderungen kommen sofort bei den Kindern an. Das Lehrer-Gerät muss dafür online sein. Sprachaufnahmen bleiben beim Start einer „Neuen Runde“ erhalten.
@@ -34,8 +58,8 @@ Die Kinder sehen nach dem Abschicken „✓ Angekommen bei der Lehrkraft“. Än
 
 ## Einsprechen
 
-- **🎤 Sprechen und aufschreiben lassen:** nutzt die Spracherkennung von Safari und trägt den Text ins Feld ein, das Kind kann ihn noch ändern. Das Gerät schickt dafür Audio an Apple (wie das Diktat der Tastatur). Siehe Datenschutz.
-- **🎙️ Aufnahme:** nimmt die Stimme als Audiodatei auf (max. 90 Sekunden). Sie wird nur zwischen iPad und Lehrer-Gerät übertragen. Beim ersten Mal fragt Safari nach dem Mikrofon.
+- **„Sprechen“ (Spracherkennung, nur wenn eingeschaltet):** nutzt die Spracherkennung von Safari und trägt den Text ins Feld ein, das Kind kann ihn noch ändern. Das Gerät schickt dafür Audio an Apple (wie das Diktat der Tastatur). Siehe Datenschutz.
+- **Aufnahme:** nimmt die Stimme als Audiodatei auf (max. 90 Sekunden). Sie wird nur zwischen iPad und Lehrer-Gerät übertragen. Beim ersten Mal fragt Safari nach dem Mikrofon.
 - Immer geht auch das Mikrofon auf der iPad-Tastatur (Diktat).
 
 ## Wo liegen die Daten?

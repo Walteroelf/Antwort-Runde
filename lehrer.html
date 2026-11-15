@@ -3,8 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; font-src 'self'; connect-src 'self' https://0.peerjs.com wss://0.peerjs.com; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
 <title>Antwort-Runde · Lehrer-Gerät</title>
-<link rel="stylesheet" href="css/style.css?v=6">
+<link rel="stylesheet" href="css/style.css?v=9">
 </head>
 <body>
 <header class="markise"><div class="kopf">
@@ -63,6 +65,8 @@
 <dialog id="dKinder"><div class="dialog-kopf"><h2>Kinder</h2><button class="rundknopf" data-close aria-label="Schließen"><span data-ic="close"></span></button></div>
   <div class="dialog-inhalt">
     <p class="muted klein" style="margin:0">Hier kannst du echte Namen eintragen. Sie bleiben nur auf diesem Gerät und werden nie an die iPads gesendet. Angezeigt werden sie nur, wenn „Klarnamen“ an ist. Schalte das aus, bevor du den Bildschirm an der Tafel zeigst.</p>
+    <div id="kWait" class="liste"></div>
+    <div id="hNames"></div>
     <div class="reihe"><span id="kTog"></span><span class="platz"></span><button class="mittelknopf klein warnung" id="bDelNames"><span data-ic="trash"></span>Alle Namen löschen</button></div>
     <div class="liste" id="pupils"></div>
   </div>
@@ -70,16 +74,27 @@
 
 <dialog id="dSet"><div class="dialog-kopf"><h2>Einstellungen</h2><button class="rundknopf" data-close aria-label="Schließen"><span data-ic="close"></span></button></div>
   <div class="dialog-inhalt">
+    <h3>Ablauf</h3>
     <div class="feld"><label class="feld">Tempo</label>
       <div class="seg" id="pace"><button data-v="live">Gemeinsam</button><button data-v="self">Eigenes Tempo</button></div>
       <div class="muted klein" id="paceHelp"></div></div>
     <label class="schalter"><input type="checkbox" id="autoRead"> Aufgabe automatisch vorlesen</label>
-    <div class="feld"><label class="schalter"><input type="checkbox" id="autoSend"> Antworten sofort übertragen (ohne „Abschicken“)</label>
-      <div class="muted klein">Die Kinder müssen nichts abschicken. Du siehst ihre Antwort schon beim Schreiben, Aufnahmen kommen nach dem Beenden an. Das schließt auch unfertige Texte ein.</div></div>
     <label class="feld">Sprechtempo der iPad-Stimme
       <select id="rate"><option value="0.7">langsam</option><option value="0.9">normal</option><option value="1.05">zügig</option></select></label>
+
+    <h3 class="privat"><span data-ic="shield"></span>Datenschutz</h3>
+    <p class="muted klein" style="margin:0">Unter jeder Einstellung steht, was sie für die Daten bedeutet.</p>
+
+    <div class="feld"><label class="schalter"><input type="checkbox" id="speech"> Spracherkennung erlauben („Sprechen, ich schreibe es auf“)</label><div id="hSpeech"></div></div>
+    <div class="feld"><label class="schalter"><input type="checkbox" id="autoSend"> Antworten sofort übertragen (ohne „Abschicken“)</label><div id="hSend"></div></div>
+    <div class="feld"><label class="feld">Neue Kinder dürfen beitreten</label>
+      <div class="seg" id="join"><button data-v="open">Offen</button><button data-v="ask">Nachfragen</button><button data-v="closed">Gesperrt</button></div><div id="hJoin"></div></div>
+    <div class="feld"><label class="feld">Antworten, Aufnahmen und Namen automatisch löschen
+      <select id="expire"><option value="1">nach 1 Stunde</option><option value="24">nach 24 Stunden</option><option value="168">nach 7 Tagen</option><option value="0">nie</option></select></label><div id="hExpire"></div></div>
+
     <hr style="border:0;border-top:3px solid var(--linie);width:100%">
-    <button class="mittelknopf warnung" id="bNew"><span data-ic="trash"></span>Neue Runde (löscht alle Antworten)</button>
+    <button class="mittelknopf warnung" id="bNew"><span data-ic="trash"></span>Runde beenden und alles löschen</button>
+    <div class="hinweis"><span data-ic="shield"></span><span>Löscht Antworten, Aufnahmen, Kinderliste und Klarnamen auf diesem Gerät. Die iPads löschen ihre Entwürfe und Antworten ebenfalls und zeigen „Runde beendet“. Deine Aufgaben und eigenen Aufnahmen bleiben. Exportiere vorher, falls du die Antworten brauchst.</span></div>
     <div class="muted klein">Antwort-Runde <span id="ver"></span></div>
   </div>
 </dialog>
@@ -87,13 +102,15 @@
 <dialog id="dExport"><div class="dialog-kopf"><h2>Exportieren</h2><button class="rundknopf" data-close aria-label="Schließen"><span data-ic="close"></span></button></div>
   <div class="dialog-inhalt">
     <label class="schalter"><input type="checkbox" id="expNames"> Klarnamen in die Datei schreiben</label>
-    <p class="muted klein" style="margin:0" id="expHint">Ohne Haken stehen nur die Pseudonyme in der Datei (z. B. „Blauer Falke 42“). So kannst du sie ablegen oder weitergeben, ohne dass Namen darin stehen.</p>
+    <div id="hExp"></div>
     <div class="knopfreihe">
       <button class="grossknopf leise" id="expTxt"><span data-ic="download"></span>Textdatei</button>
       <button class="grossknopf leise" id="expCsv"><span data-ic="download"></span>Tabelle (CSV)</button>
     </div>
   </div>
 </dialog>
+
+<dialog id="dImg" style="width:min(900px,calc(100vw - 24px))"><div class="dialog-kopf"><h2>Foto</h2><button class="rundknopf" data-close aria-label="Schließen"><span data-ic="close"></span></button></div><div class="dialog-inhalt"><img id="bigImg" alt="Foto-Antwort" style="width:100%;height:auto;border-radius:12px"></div></dialog>
 
 <dialog id="dBulk"><div class="dialog-kopf"><h2>Mehrere Aufgaben einfügen</h2><button class="rundknopf" data-close aria-label="Schließen"><span data-ic="close"></span></button></div>
   <div class="dialog-inhalt">
@@ -105,8 +122,8 @@
 
 <script src="lib/peerjs.min.js"></script>
 <script src="lib/qrcode.js"></script>
-<script src="js/common.js?v=6"></script>
-<script src="js/net.js?v=6"></script>
-<script src="js/lehrer.js?v=6"></script>
+<script src="js/common.js?v=9"></script>
+<script src="js/net.js?v=9"></script>
+<script src="js/lehrer.js?v=9"></script>
 </body>
 </html>

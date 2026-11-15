@@ -198,6 +198,16 @@ dialog::backdrop { background: rgba(10, 20, 35, .55); }
 .kind-zeile input { width: 180px; }
 @media (max-width: 520px) { .kind-zeile { flex-wrap: wrap; } .kind-zeile input { width: 100%; } }
 
+.hinweis { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 14px; border: 3px solid var(--gut); background: var(--gut-hell); font-size: 16px; line-height: 1.35; }
+.hinweis svg.ic { width: 26px; height: 26px; margin-top: 1px; }
+.hinweis > span:first-child { flex: none; display: inline-flex; }
+.hinweis.warn { border-color: var(--hm); background: var(--hm-hell); }
+.hinweis b { font-weight: 700; }
+h3.privat { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+h3.privat svg.ic { width: 28px; height: 28px; color: var(--gut); }
+.dialog-inhalt h3 { font-size: 20px; }
+.feld > .hinweis, .feld > div > .hinweis { margin-top: 6px; }
+
 /* ---------- Startseite ---------- */
 .kacheln { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; }
 .kachel { display: grid; gap: 8px; text-decoration: none; color: inherit; background: var(--tresen); border: 4px solid var(--holz); border-radius: 22px; padding: 20px; box-shadow: 0 6px 0 var(--holz); }
@@ -236,3 +246,50 @@ dialog::backdrop { background: rgba(10, 20, 35, .55); }
 
 @media (max-width: 520px) { body { font-size: 18px; } .grossknopf { font-size: 22px; min-height: 70px; } }
 @media (prefers-reduced-motion: reduce) { .antwort.neu, .grossknopf.aufnahme { animation: none; } }
+
+/* ---------- Schüler: alles auf einem Bildschirm, ohne Scrollen ---------- */
+body.kidpage { height: 100vh; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; padding-bottom: 0; }
+.status-kopf { background: var(--tresen); border: 3px solid var(--holz); border-radius: 99px; padding: 0 12px; font-size: 15px; display: inline-flex; gap: 8px; align-items: center; min-height: 34px; }
+.kidpage .markise { flex: none; }
+.kidpage .kopf { padding-top: 6px; padding-bottom: 6px; }
+.kidpage .schild-titel { font-size: clamp(20px, 3.6vw, 28px); }
+.kidpage .kind { flex: 1; min-height: 0; width: 100%; margin: 26px auto 0; gap: 10px; display: flex; flex-direction: column; padding-bottom: max(12px, env(safe-area-inset-bottom, 0px)); }
+.kidpage .kind > .warten { margin: auto; }
+.kidpage .fortschritt { flex: none; flex-wrap: nowrap; justify-content: flex-start; gap: 10px; font-size: 17px; }
+.kidpage .fortschritt .grow { flex: 1; min-width: 0; }
+.rundknopf.klein { width: 44px; height: 44px; flex: none; }
+.rundknopf:disabled { opacity: .35; box-shadow: none; }
+.bildschirm { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) minmax(0, 1.25fr); gap: 12px; }
+.s-frage, .s-antwort { min-height: 0; display: flex; flex-direction: column; gap: 10px; }
+.s-frage .aufgabe-karte { flex: 1; min-height: 0; overflow: auto; align-content: start; padding: 14px 16px; gap: 8px; }
+.aufgabe-karte .t { font-size: clamp(19px, 2.6vw, 24px); }
+.aufgabe-karte .q { font-size: clamp(22px, 3.4vw, 30px); }
+.s-antwort textarea { flex: 1; min-height: 70px; resize: none; font-size: clamp(19px, 2.8vw, 24px); }
+.kind .grossknopf { min-height: 58px; padding: 8px 16px; font-size: clamp(18px, 2.6vw, 22px); border-radius: 16px; box-shadow: 0 4px 0 var(--holz); gap: 10px; }
+.kind .grossknopf.weiter { box-shadow: 0 4px 0 var(--gut-dunkel); }
+.kind .grossknopf.aufnahme { box-shadow: 0 4px 0 #7d2218; }
+.kind .grossknopf svg.ic { width: 28px; height: 28px; }
+.werkzeuge { display: flex; gap: 10px; flex: none; flex-wrap: wrap; }
+.werkzeuge > * { flex: 1 1 150px; min-width: 0; }
+.aufnahme-box { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.aufnahme-box audio { flex: 1 1 160px; min-width: 0; height: 44px; }
+.aufnahme-box .grossknopf { flex: 1 1 150px; }
+.aufnahme-box.voll { flex: 1; align-content: center; }
+.aufnahme-box.voll .grossknopf { min-height: 110px; }
+#sendSt { flex: none; min-height: 46px; display: flex; align-items: center; }
+#sendSt .meldung { width: 100%; padding: 6px 12px; font-size: 17px; border-width: 2px; }
+#sendSt .meldung svg.ic { width: 26px; height: 26px; }
+.hinweis-klein { margin: 0; text-align: center; width: 100%; }
+/* Querformat: Antwort links, Frage rechts */
+@media (orientation: landscape) and (min-width: 720px) {
+  .bildschirm { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: 16px; }
+  .s-antwort { order: 1; }
+  .s-frage { order: 2; }
+}
+.aufgabe-bild { min-height: 0; display: grid; justify-items: center; }
+.aufgabe-bild img { max-width: 100%; max-height: 38dvh; object-fit: contain; border-radius: 12px; }
+.foto-klein { height: 52px; width: auto; max-width: 90px; border-radius: 8px; border: 3px solid var(--holz); object-fit: cover; }
+.vorschau-bild { max-width: 100%; max-height: 220px; width: auto; border-radius: 12px; border: 3px solid var(--linie); justify-self: start; }
+.antwort img.foto { max-width: min(100%, 320px); max-height: 240px; border-radius: 12px; border: 3px solid var(--linie); cursor: zoom-in; justify-self: start; }
+.antwort .zeit { margin-left: auto; }
+@media (max-height: 640px) { .kidpage .kind { margin-top: 22px; } .kind .grossknopf { min-height: 50px; } }

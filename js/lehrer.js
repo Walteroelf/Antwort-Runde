@@ -4,20 +4,25 @@
 (function () {
   const $ = id => document.getElementById(id);
   const KEY = 'ar.teacher.' + (AR.NET === 'bc' ? 'bc' : 'p');
-  const defaults = () => ({ room: AR.genCode(4), round: AR.rid(6), tasks: [], current: -1, pace: 'live', rate: 0.9, autoRead: true, names: {}, showNames: false, autoSend: false, pupils: {}, answers: {} });
-  let S = Object.assign(defaults(), AR.store.get(KEY, {}));
+  const defaults = () => ({ room: AR.genCode(4), round: AR.rid(6), tasks: [], current: -1, pace: 'live', rate: 0.9, autoRead: true, names: {}, showNames: false, autoSend: false, speech: false, join: 'open', expire: 24, pupils: {}, answers: {} });
+  const stored = AR.store.get(KEY, {});
+  let S = Object.assign(defaults(), stored);
+  if (stored.round && stored.expire === undefined) S.expire = 0;   // bestehende Installation: nichts löschen, was bisher blieb
   if (!S.tasks.length) S.tasks.push(newTask());
 
   const conns = new Map();     // conn -> pid
   const online = new Set();    // pid
+  const pending = new Map();   // pid -> {conn, name}: warten auf Zulassung
   const audio = new Map();     // 'task|pid' -> {blob}
   const urls = new Map();      // 'task|pid' -> Objekt-URL (damit Player nicht neu laden)
+  const images = new Map();    // taskId -> {blob, ts}: Bild zur Aufgabe
+  const ansImg = new Map();    // 'task|pid' -> {blob}: Foto-Antworten
   const voices = new Map();    // taskId -> {blob, ts}: Vorlese-Aufnahmen der Lehrkraft
   let vrec = null;             // laufende Aufnahme {task, recorder, stream, chunks, timer}
   let host = null, takenTries = 0;
   let view = 'aufgaben', openTask = null, vi = Math.max(0, S.current), openAns = new Set(), fresh = null, pendingDraw = false;
 
-  function newTask() { return { id: AR.rid(6), text: '', q: '', mode: 'text', voice: 0 }; }
+  function newTask() { return { id: AR.rid(6), text: '', q: '', mode: 'text', voice: 0, image: 0, photo: false }; }
   function save() { AR.store.set(KEY, S); }
   const MODES = { text: 'Text', both: 'Text oder Aufnahme', audio: 'Aufnahme' };
 
@@ -51,7 +56,7 @@
       try {
         if (!this.db) return;
         const os = this.db.transaction('a', 'readwrite').objectStore('a'), req = os.openCursor();
-        req.onsuccess = () => { const c = req.result; if (c) { if (!String(c.key).startsWith('v|')) c.delete(); c.continue(); } };
+        req.onsuccess = () => { const c = req.result; if (c) { if (!/^[vi]\|/.test(String(c.key))) c.delete(); c.continue(); } };
       } catch (e) { /* egal */ }
     }
   };
@@ -74,7 +79,7 @@
   function scheduleDraw() { if (drawTimer) return; drawTimer = setTimeout(() => { drawTimer = null; drawHead(); drawKinder(); drawLive(); drawAus(); }, 200); }
   function redrawAll() { drawKinder(); drawLive(); drawAus(); }
   const byLabel = (a, b) => label(a).localeCompare(label(b), 'de');
-  function stateMsg() { return { t: 'state', round: S.round, tasks: S.tasks, current: S.current, pace: S.pace, rate: S.rate, autoRead: S.autoRead, autoSend: !!S.autoSend }; }
+  function stateMsg() { return { t: 'state', round: S.round, tasks: S.tasks, current: S.current, pace: S.pace, rate: S.rate, autoRead: S.autoRead, autoSend: !!S.autoSend, speech: !!S.speech }; }
   function broadcast() { conns.forEach((pid, c) => c.send(stateMsg())); }
   let pushTimer = null;
   function pushSoon() { clearTimeout(pushTimer); pushTimer = setTimeout(broadcast, 350); }
@@ -103,22 +108,38 @@
       },
       onConn(c) {
         c.on('data', d => onData(c, d));
-        c.on('close', () => { const pid = conns.get(c); conns.delete(c); if (pid && ![...conns.values()].includes(pid)) online.delete(pid); drawHead(); drawKinder(); drawLive(); });
+        c.on('close', () => { pending.forEach((v, k) => { if (v.conn === c) pending.delete(k); }); const pid = conns.get(c); conns.delete(c); if (pid && ![...conns.values()].includes(pid)) online.delete(pid); drawHead(); drawKinder(); drawLive(); });
       }
     });
   }
   let netState = 'verbinde …';
 
+  function dropMedia(key) {
+    audio.delete(key); ansImg.delete(key); idb.del(S.round + '|' + key); idb.del(S.round + '|img|' + key);
+    [key, key + '|img'].forEach(k => { if (urls.has(k)) { URL.revokeObjectURL(urls.get(k)); urls.delete(k); } });
+  }
+  function accept(c, pid, name) {
+    conns.set(c, pid); online.add(pid); pending.delete(pid);
+    S.pupils[pid] = { name: String(name || pid).slice(0, 40), last: Date.now() };
+    save(); c.send(stateMsg()); drawHead(); drawKinder(); drawLive(); drawAus();
+  }
+  function approve(pid) { const w = pending.get(pid); if (w) accept(w.conn, pid, w.name); }
+  function deny(pid) { const w = pending.get(pid); if (w) { w.conn.send({ t: 'refused' }); pending.delete(pid); drawHead(); drawKinder(); } }
+
   function onData(c, d) {
     if (!d || !d.t) return;
     if (d.t === 'hello' && d.pid) {
-      conns.set(c, d.pid); online.add(d.pid);
-      S.pupils[d.pid] = { name: String(d.name || d.pid).slice(0, 40), last: Date.now() };
-      save(); c.send(stateMsg()); drawHead(); drawKinder(); drawLive(); drawAus();
-    } else if (d.t === 'needaudio' && d.task) {
+      const known = !!S.pupils[d.pid];
+      if (!known && S.join === 'closed') { c.send({ t: 'refused' }); return; }
+      if (!known && S.join === 'ask') { pending.set(d.pid, { conn: c, name: String(d.name || d.pid).slice(0, 40) }); c.send({ t: 'wait' }); drawHead(); drawKinder(); return; }
+      accept(c, d.pid, d.name);
+    } else if (d.t === 'needimage' && d.task && conns.has(c)) {
+      const im = images.get(d.task);
+      if (im) im.blob.arrayBuffer().then(buf => c.send({ t: 'taskimage', task: d.task, ts: im.ts, img: buf, mime: im.blob.type || 'image/jpeg' }));
+    } else if (d.t === 'needaudio' && d.task && conns.has(c)) {
       const v = voices.get(d.task);
       if (v) v.blob.arrayBuffer().then(buf => c.send({ t: 'taskaudio', task: d.task, ts: v.ts, audio: buf, mime: v.blob.type || 'audio/mp4' }));
-    } else if (d.t === 'answer' && d.pid && d.task) {
+    } else if (d.t === 'answer' && d.pid && d.task && conns.get(c) === d.pid) {
       const ack = () => c.send({ t: 'ack', task: d.task, ts: d.ts });
       if (d.round !== S.round || !S.tasks.some(t => t.id === d.task)) { ack(); return; }
       const pid = d.pid;
@@ -127,15 +148,25 @@
       const key = d.task + '|' + pid;
       const prev = (S.answers[d.task] || {})[pid];
       if (prev && prev.ts > d.ts) { ack(); return; }
-      const gone = !String(d.text || '').trim() && !(d.audio && (d.audio.byteLength || d.audio.size)) && (!prev || !prev.audio || d.dropAudio);
-      if (gone) { if (S.answers[d.task]) delete S.answers[d.task][pid]; save(); ack(); scheduleDraw(); return; }
-      let hasAudio = false;
-      if (d.audio && (d.audio.byteLength || d.audio.size)) {
+      const newAudio = !!(d.audio && (d.audio.byteLength || d.audio.size)), newImg = !!(d.image && (d.image.byteLength || d.image.size));
+      const keepAudio = !!(prev && prev.audio && !d.dropAudio), keepImg = !!(prev && prev.img && !d.dropImage);
+      if (!String(d.text || '').trim() && !newAudio && !newImg && !keepAudio && !keepImg) {
+        if (S.answers[d.task]) delete S.answers[d.task][pid];
+        dropMedia(key); save(); ack(); scheduleDraw(); return;
+      }
+      if (!keepAudio && !newAudio) { audio.delete(key); idb.del(S.round + '|' + key); if (urls.has(key)) { URL.revokeObjectURL(urls.get(key)); urls.delete(key); } }
+      if (!keepImg && !newImg) { ansImg.delete(key); idb.del(S.round + '|img|' + key); if (urls.has(key + '|img')) { URL.revokeObjectURL(urls.get(key + '|img')); urls.delete(key + '|img'); } }
+      if (newAudio) {
         const blob = new Blob([d.audio], { type: d.mime || 'audio/mp4' });
         if (urls.has(key)) { URL.revokeObjectURL(urls.get(key)); urls.delete(key); }
-        audio.set(key, { blob }); idb.put(S.round + '|' + key, { blob }); hasAudio = true;
-      } else if (prev && prev.audio && !d.dropAudio) hasAudio = true;
-      (S.answers[d.task] = S.answers[d.task] || {})[pid] = { text: String(d.text || '').slice(0, 5000), audio: hasAudio, mime: d.mime || '', ts: d.ts || Date.now() };
+        audio.set(key, { blob }); idb.put(S.round + '|' + key, { blob });
+      }
+      if (newImg) {
+        const blob = new Blob([d.image], { type: d.imgMime || 'image/jpeg' });
+        if (urls.has(key + '|img')) { URL.revokeObjectURL(urls.get(key + '|img')); urls.delete(key + '|img'); }
+        ansImg.set(key, { blob }); idb.put(S.round + '|img|' + key, { blob });
+      }
+      (S.answers[d.task] = S.answers[d.task] || {})[pid] = { text: String(d.text || '').slice(0, 5000), audio: newAudio || keepAudio, img: newImg || keepImg, mime: d.mime || '', ts: d.ts || Date.now() };
       if (!prev) fresh = key;
       save(); ack(); scheduleDraw();
     }
@@ -143,7 +174,8 @@
 
   /* ---------- Kopf, Dialoge ---------- */
   function drawHead() {
-    $('pillTxt').textContent = netState === 'ok' ? online.size + ' online' : netState;
+    $('pillTxt').textContent = netState === 'ok' ? online.size + ' online' + (pending.size ? ' · ' + pending.size + ' warten' : '') : netState;
+    $('bKinder').classList.toggle('primaer', pending.size > 0);
     $('codeTxt').textContent = S.room;
     const n = total(); $('ansN').hidden = !n; $('ansN').textContent = n;
   }
@@ -159,6 +191,20 @@
       box.querySelectorAll('.kind-zeile').forEach(r => { r.firstChild.className = 'dot ' + (online.has(r.dataset.pid) ? 'ok' : ''); }); return;
     }
     $('kTog').innerHTML = ''; $('kTog').appendChild(nameToggle());
+    hint($('hNames'), S.showNames ? 'warn' : 'ok', S.showNames
+      ? '<b>Klarnamen sind sichtbar.</b> Zeige den Bildschirm so nicht an der Tafel oder vor der Klasse.'
+      : '<b>Nur Pseudonyme sichtbar.</b> Eingetragene Namen bleiben gespeichert, aber verborgen, bis du sie einschaltest.');
+    const w = $('kWait'); w.innerHTML = '';
+    if (pending.size) {
+      w.appendChild(el('b', null, 'Warten auf Zulassung'));
+      pending.forEach((v, pid) => {
+        const r = el('div', 'kind-zeile', '<span class="dot warn"></span><span class="n">' + AR.esc(v.name) + '</span>');
+        const ok = el('button', 'mittelknopf klein primaer', AR.icon('check') + 'Zulassen'); ok.onclick = () => approve(pid);
+        const no = el('button', 'mittelknopf klein', AR.icon('close') + 'Ablehnen'); no.onclick = () => deny(pid);
+        r.append(ok, no); w.appendChild(r);
+      });
+      if (pending.size > 1) { const all = el('button', 'mittelknopf klein', 'Alle zulassen'); all.onclick = () => [...pending.keys()].forEach(approve); w.appendChild(all); }
+    }
     box.innerHTML = '';
     if (!ids.length) { box.appendChild(el('p', 'leer', 'Noch niemand verbunden.')); return; }
     ids.sort(byLabel).forEach(pid => {
@@ -169,9 +215,50 @@
       r.appendChild(inp); box.appendChild(r);
     });
   }
+  /* ---------- Datenschutz-Hinweise: sagen bei jeder Einstellung, was sie bewirkt ---------- */
+  function hint(box, level, html) {
+    if (!box) return; box.innerHTML = '';
+    box.appendChild(el('div', 'hinweis' + (level === 'warn' ? ' warn' : ''), '<span>' + AR.icon(level === 'warn' ? 'alert' : 'shield') + '</span><span>' + html + '</span>'));
+  }
+  const EXPIRE_TXT = { 1: '1 Stunde', 24: '24 Stunden', 168: '7 Tagen' };
+  function drawHints() {
+    hint($('hSpeech'), S.speech ? 'warn' : 'ok', S.speech
+      ? '<b>Achtung:</b> Tippt ein Kind auf „Sprechen“, schickt Safari den Ton zur Umwandlung in Text an <b>Apple</b>. Dort gelten Apples Regeln, nicht die dieser App. Nur einschalten, wenn Schule und Eltern das erlaubt haben.'
+      : '<b>Aus:</b> Der Knopf „Sprechen“ fehlt. Ton verlässt das iPad nur bei einer Sprachaufnahme und geht dann direkt zu deinem Gerät. Das Diktat der iPad-Tastatur kann die App nicht sperren. Das geht nur in den iPad-Einstellungen (Allgemein → Tastatur → Diktierfunktion).');
+    hint($('hSend'), S.autoSend ? 'warn' : 'ok', S.autoSend
+      ? '<b>Du siehst Texte schon beim Schreiben</b>, auch unfertige und mit Tippfehlern. Die Kinder werden auf ihrem iPad darauf hingewiesen. Entwürfe liegen dadurch immer auch bei dir.'
+      : '<b>Aus:</b> Eine Antwort kommt erst zu dir, wenn das Kind „Abschicken“ tippt. Bis dahin bleibt der Entwurf nur auf seinem iPad.');
+    hint($('hJoin'), S.join === 'open' ? 'warn' : 'ok',
+      S.join === 'open' ? '<b>Offen:</b> Jeder, der den Code kennt oder errät, kann beitreten und Antworten senden. Der Code hat nur 4 Buchstaben. Sperre die Runde, sobald alle da sind.' :
+      S.join === 'ask' ? '<b>Nachfragen:</b> Du bestätigst jedes neue Kind in der Kinderliste („n online“). Bis dahin sehen sie keine Aufgaben, und ihre Antworten werden nicht angenommen. Kinder, die schon dabei waren, verbinden sich selbst wieder.' :
+      '<b>Gesperrt:</b> Niemand Neues kommt herein. Kinder, die schon in dieser Runde waren, können sich wieder verbinden.');
+    hint($('hExpire'), S.expire === 0 || S.expire === 1 ? 'warn' : 'ok', S.expire === 0
+      ? '<b>Nie:</b> Antworten, Aufnahmen und Namen bleiben auf diesem Gerät, bis du „Runde beenden“ wählst oder die Browserdaten löschst.'
+      : '<b>Nach ' + EXPIRE_TXT[S.expire] + ':</b> Antworten und Aufnahmen werden gelöscht, ebenso Kinder ohne Aktivität samt Klarnamen.' + (S.expire === 1 ? ' <b>Achtung:</b> Exportiere die Antworten noch in der Stunde, sonst sind sie weg.' : ' Exportiere vorher, was du behalten willst.'));
+  }
+  function drawExpHint() {
+    const on = $('expNames').checked;
+    hint($('hExp'), on ? 'warn' : 'ok', on
+      ? '<b>Die Datei enthält Klarnamen.</b> Lege sie nur an einem Ort ab, den die Schule dafür freigegeben hat (nicht in einer privaten Cloud, nicht per privater Mail).'
+      : '<b>Nur Pseudonyme</b> wie „Blauer Falke 42“. Ohne deine Namenstabelle lässt sich die Datei keinem Kind zuordnen.');
+  }
+  function purge() {
+    if (!S.expire) return;
+    const cut = Date.now() - S.expire * 3600e3; let ch = false;
+    for (const tid in S.answers) for (const pid in S.answers[tid]) if (S.answers[tid][pid].ts < cut) {
+      delete S.answers[tid][pid]; dropMedia(tid + '|' + pid); ch = true;
+    }
+    for (const pid in S.pupils) if (!online.has(pid) && !pending.has(pid) && (S.pupils[pid].last || 0) < cut) { delete S.pupils[pid]; delete S.names[pid]; ch = true; }
+    if (ch) { save(); drawHead(); redrawAll(); }
+  }
+  setInterval(purge, 600000);
+
   function drawSettings() {
     document.querySelectorAll('#pace button').forEach(b => b.classList.toggle('an', b.dataset.v === S.pace));
     $('autoRead').checked = !!S.autoRead; $('autoSend').checked = !!S.autoSend; $('rate').value = String(S.rate);
+    $('speech').checked = !!S.speech; $('expire').value = String(S.expire);
+    document.querySelectorAll('#join button').forEach(b => b.classList.toggle('an', b.dataset.v === S.join));
+    drawHints();
     $('paceHelp').textContent = S.pace === 'self' ? 'Die Kinder blättern selbst durch alle Aufgaben.' : 'Alle Kinder sehen immer die Aufgabe, die du freigibst.';
   }
 
@@ -210,13 +297,13 @@
       '<option value="text">Schreiben oder Einsprechen (wird Text)</option>' +
       '<option value="both">Text oder Sprachaufnahme</option>' +
       '<option value="audio">nur Sprachaufnahme</option></select></label>' +
-      '<div class="stimme"></div>' +
+      '<div class="stimme"></div><div class="stimme bildblock"></div><div class="stimme fotoblock"></div>' +
       '<div class="reihe"><button class="mittelknopf primaer" data-a="show">' + AR.icon('play') + 'Jetzt zeigen</button><span class="platz"></span>' +
       '<button class="mittelknopf klein" data-a="up" aria-label="Nach oben">' + AR.icon('up') + '</button>' +
       '<button class="mittelknopf klein" data-a="down" aria-label="Nach unten">' + AR.icon('down') + '</button>' +
       '<button class="mittelknopf klein warnung" data-a="del">' + AR.icon('trash') + 'Löschen</button></div>';
     e.querySelector('[data-f=text]').value = t.text; e.querySelector('[data-f=q]').value = t.q; e.querySelector('[data-f=mode]').value = t.mode || 'text';
-    drawVoice(e.querySelector('.stimme'), t);
+    drawVoice(e.querySelector('.stimme'), t); drawImageBlock(e.querySelector('.bildblock'), t); drawPhotoBlock(e.querySelector('.fotoblock'), t);
     e.oninput = e.onchange = ev => {
       const f = ev.target.dataset.f; if (!f) return;
       t[f] = ev.target.value; save(); pushSoon();
@@ -230,7 +317,7 @@
         const has = nAnswers(t.id);
         if (has && !confirm('Zu dieser Aufgabe gibt es ' + has + ' Antworten. Wirklich löschen?')) return;
         if (vrec && vrec.task === t.id) stopVRec(true);
-        voices.delete(t.id); idb.del('v|' + t.id);
+        voices.delete(t.id); idb.del('v|' + t.id); images.delete(t.id); idb.del('i|' + t.id);
         S.tasks.splice(i, 1); delete S.answers[t.id]; openTask = null; if (!S.tasks.length) S.tasks.push(newTask());
         if (S.current >= S.tasks.length) S.current = S.tasks.length - 1;
         vi = Math.min(vi, S.tasks.length - 1);
@@ -240,6 +327,39 @@
       save(); broadcast(); drawTasks(); drawHead();
     };
     return e;
+  }
+
+  /* ---------- Bild zur Aufgabe und Foto als Antwort ---------- */
+  function drawImageBlock(box, t) {
+    box.innerHTML = ''; box.appendChild(el('b', null, 'Bild zur Aufgabe'));
+    const im = images.get(t.id);
+    if (t.image && im) {
+      const img = el('img', 'vorschau-bild'); img.src = URL.createObjectURL(im.blob); img.alt = 'Bild zur Aufgabe'; box.appendChild(img);
+      const r = el('div', 'reihe');
+      const ch = el('button', 'mittelknopf', AR.icon('image') + 'Anderes Bild'); ch.onclick = () => setImage(t);
+      const rm = el('button', 'mittelknopf warnung', AR.icon('trash') + 'Entfernen'); rm.onclick = () => { t.image = 0; images.delete(t.id); idb.del('i|' + t.id); save(); broadcast(); drawTasks(); };
+      r.append(ch, rm); box.appendChild(r);
+    } else {
+      const b = el('button', 'mittelknopf', AR.icon('image') + 'Bild oder Foto wählen'); b.onclick = () => setImage(t); b.style.justifySelf = 'start'; box.appendChild(b);
+      box.appendChild(el('span', 'muted klein', t.image ? 'Das Bild fehlt auf diesem Gerät. Bitte neu wählen.' : 'Die Kinder sehen das Bild in der Aufgabe (wird verkleinert).'));
+    }
+  }
+  function setImage(t) {
+    AR.pickImage(async f => {
+      try { const blob = await AR.shrinkImage(f, 1400, 0.85), ts = Date.now(); images.set(t.id, { blob, ts }); idb.put('i|' + t.id, { blob, ts }); t.image = ts; save(); broadcast(); drawTasks(); }
+      catch (e) { alert('Das Bild konnte nicht gelesen werden.'); }
+    });
+  }
+  function drawPhotoBlock(box, t) {
+    box.innerHTML = '';
+    const lab = el('label', 'schalter', '<input type="checkbox"> Kinder dürfen ein Foto als Antwort machen'); const cb = lab.querySelector('input'); cb.checked = !!t.photo;
+    box.appendChild(lab);
+    const h = el('div'); box.appendChild(h);
+    const upd = () => hint(h, t.photo ? 'warn' : 'ok', t.photo
+      ? '<b>Fotos können Gesichter, Namen oder das Zuhause zeigen.</b> Die Kinder sollen nur Arbeitsergebnisse fotografieren (Heft, Zeichnung, Legearbeit). Fotos werden auf dem iPad verkleinert, ohne Standort-Daten, und gehen direkt zu deinem Gerät. Sie stehen nicht in den Exportdateien, nur der Vermerk „[Foto]“. Sie werden mit „Runde beenden“ oder nach der eingestellten Zeit gelöscht.'
+      : '<b>Aus:</b> Die Kamera und Fotos werden bei dieser Aufgabe nicht angeboten.');
+    cb.onchange = () => { t.photo = cb.checked; save(); pushSoon(); upd(); };
+    upd();
   }
 
   /* ---------- Vorlese-Aufnahme der Lehrkraft ---------- */
@@ -304,6 +424,12 @@
         r.appendChild(el('p', 'text', AR.esc(a.text)));
         if (AR.tts.ok) { const b = el('button', 'mittelknopf klein', AR.icon('speaker') + 'Vorlesen'); b.style.justifySelf = 'start'; b.onclick = () => AR.tts.speak(a.text, S.rate); r.appendChild(b); }
       }
+      if (a.img) {
+        if (ansImg.has(key)) {
+          const ik = key + '|img'; if (!urls.has(ik)) urls.set(ik, URL.createObjectURL(ansImg.get(key).blob));
+          const im = el('img', 'foto'); im.src = urls.get(ik); im.alt = 'Foto-Antwort'; im.onclick = () => { $('bigImg').src = im.src; $('dImg').showModal(); }; r.appendChild(im);
+        } else r.appendChild(el('span', 'muted klein', '(Foto nicht mehr auf diesem Gerät)'));
+      }
       if (a.audio) {
         if (audio.has(key)) { const au = el('audio'); au.controls = true; au.src = audioUrl(key); r.appendChild(au); }
         else r.appendChild(el('span', 'muted klein', '(Aufnahme nicht mehr auf diesem Gerät)'));
@@ -338,7 +464,8 @@
     const ans = el('div', 'aufgabe-ansicht');
     if (t.text) ans.appendChild(el('p', 't', AR.esc(t.text)));
     if (t.q) ans.appendChild(el('p', 'q', AR.esc(t.q)));
-    if (!t.text && !t.q) ans.appendChild(el('p', 'leer', 'Diese Aufgabe ist noch leer. Du kannst sie unter „Aufgaben“ ausfüllen.'));
+    if (t.image && images.has(t.id)) { const im = el('img', 'vorschau-bild'); im.src = URL.createObjectURL(images.get(t.id).blob); ans.appendChild(im); }
+    if (!t.text && !t.q && !t.image) ans.appendChild(el('p', 'leer', 'Diese Aufgabe ist noch leer. Du kannst sie unter „Aufgaben“ ausfüllen.'));
     box.appendChild(ans);
 
     const btns = el('div', 'knopfreihe');
@@ -402,7 +529,7 @@
     S.tasks.forEach((t, i) => {
       out += '=== Aufgabe ' + (i + 1) + ' ===\n' + (t.text ? t.text + '\n' : '') + (t.q ? t.q + '\n' : '') + '\n';
       const l = S.answers[t.id] || {};
-      Object.keys(l).sort((a, b) => label(a, nm).localeCompare(label(b, nm), 'de')).forEach(pid => { out += label(pid, nm) + ': ' + (l[pid].text || '') + (l[pid].audio ? ' [Sprachaufnahme]' : '') + '\n'; });
+      Object.keys(l).sort((a, b) => label(a, nm).localeCompare(label(b, nm), 'de')).forEach(pid => { out += label(pid, nm) + ': ' + (l[pid].text || '') + (l[pid].audio ? ' [Sprachaufnahme]' : '') + (l[pid].img ? ' [Foto]' : '') + '\n'; });
       out += '\n';
     });
     AR.download('antworten-' + stamp() + '.txt', out, 'text/plain;charset=utf-8');
@@ -411,7 +538,7 @@
     const q = s => '"' + String(s == null ? '' : s).replace(/"/g, '""') + '"';
     const pids = Object.keys(S.pupils).sort(byLabel);
     const rows = [['Kind'].concat(S.tasks.map((t, i) => 'Aufgabe ' + (i + 1) + ': ' + (t.q || t.text || '').replace(/\s+/g, ' ').slice(0, 60)))];
-    pids.forEach(pid => rows.push([label(pid, nm)].concat(S.tasks.map(t => { const a = (S.answers[t.id] || {})[pid]; return a ? (a.text || '') + (a.audio ? ' [Sprachaufnahme]' : '') : ''; }))));
+    pids.forEach(pid => rows.push([label(pid, nm)].concat(S.tasks.map(t => { const a = (S.answers[t.id] || {})[pid]; return a ? (a.text || '') + (a.audio ? ' [Sprachaufnahme]' : '') + (a.img ? ' [Foto]' : '') : ''; }))));
     AR.download('antworten-' + stamp() + '.csv', '﻿' + rows.map(r => r.map(q).join(';')).join('\n'), 'text/csv;charset=utf-8');
   }
 
@@ -426,7 +553,14 @@
   $('bKinder').onclick = () => { $('dKinder').showModal(); drawKinder(); };
   $('bSet').onclick = () => { drawSettings(); $('dSet').showModal(); };
   $('pace').onclick = e => { const v = e.target.dataset.v; if (!v) return; S.pace = v; if (v === 'self' && S.current >= 0) S.current = 0; save(); broadcast(); drawSettings(); drawLive(); };
-  $('autoSend').onchange = e => { S.autoSend = e.target.checked; save(); broadcast(); };
+  $('autoSend').onchange = e => { S.autoSend = e.target.checked; save(); broadcast(); drawHints(); };
+  $('speech').onchange = e => {
+    if (e.target.checked && !confirm('Spracherkennung einschalten?\n\nWenn ein Kind auf „Sprechen“ tippt, wird der Ton an Apple geschickt, damit er in Text umgewandelt wird. Das passiert außerhalb dieser App.\n\nNur einschalten, wenn Schule und Eltern das erlaubt haben.')) { e.target.checked = false; return; }
+    S.speech = e.target.checked; save(); broadcast(); drawHints();
+  };
+  $('join').onclick = e => { const v = e.target.dataset.v; if (!v) return; S.join = v; save(); drawSettings(); drawHead(); };
+  $('expire').onchange = e => { S.expire = parseInt(e.target.value, 10); save(); drawHints(); purge(); };
+  $('expNames').onchange = drawExpHint;
   $('autoRead').onchange = e => { S.autoRead = e.target.checked; save(); broadcast(); };
   $('rate').onchange = e => { S.rate = parseFloat(e.target.value); save(); broadcast(); };
   $('bAdd').onclick = () => { const t = newTask(); S.tasks.push(t); openTask = t.id; save(); broadcast(); drawTasks(); };
@@ -442,24 +576,27 @@
     });
     $('bulkTxt').value = ''; $('dBulk').close(); save(); broadcast(); drawTasks();
   };
-    $('bExport').onclick = () => { $('expNames').checked = false; $('expHint').hidden = !hasNames(); $('dExport').showModal(); };
+    $('bExport').onclick = () => { $('expNames').checked = false; drawExpHint(); $('dExport').showModal(); };
   $('expTxt').onclick = () => exportTxt($('expNames').checked);
   $('expCsv').onclick = () => exportCsv($('expNames').checked);
   const hasNames = () => Object.values(S.names).some(n => (n || '').trim());
   $('bDelNames').onclick = () => { if (!hasNames() || confirm('Alle eingetragenen Klarnamen von diesem Gerät löschen?')) { S.names = {}; S.showNames = false; save(); redrawAll(); } };
   $('bNew').onclick = () => {
-    if (total() && !confirm('Neue Runde starten? Antworten, Kinderliste und Klarnamen dieser Runde werden gelöscht. Vorher bitte exportieren!')) return;
+    if ((total() || Object.keys(S.pupils).length) && !confirm('Runde beenden?\n\nAntworten, Aufnahmen, Kinderliste und Klarnamen werden von diesem Gerät gelöscht. Die iPads löschen ihre Entwürfe und Antworten ebenfalls.\n\nHast du vorher exportiert?')) return;
+    const old = [...conns.keys(), ...[...pending.values()].map(v => v.conn)];
+    old.forEach(c => c.send({ t: 'end' }));
     S.round = AR.rid(6); S.room = AR.genCode(4); S.answers = {}; S.pupils = {}; S.names = {}; S.showNames = false; S.current = -1; vi = 0;
-    audio.clear(); urls.forEach(u => URL.revokeObjectURL(u)); urls.clear(); idb.clear(); online.clear();
-    conns.forEach((pid, c) => c.close()); conns.clear();
-    save(); $('dSet').close(); drawHead(); drawKinder(); showView('aufgaben'); startHost();
+    audio.clear(); ansImg.clear(); urls.forEach(u => URL.revokeObjectURL(u)); urls.clear(); idb.clear(); online.clear(); pending.clear();
+    save(); $('dSet').close(); drawHead(); drawKinder(); showView('aufgaben');
+    // Kurz warten, damit die iPads die Nachricht „Runde beendet“ noch bekommen
+    setTimeout(() => { old.forEach(c => c.close()); conns.clear(); startHost(); }, 600);
   };
 
   /* ---------- Start ---------- */
   $('ver').textContent = AR.VERSION;
   idb.open().then(idb.all.bind(idb)).then(rows => {
-    rows.forEach(([k, v]) => { const [r, ...rest] = k.split('|'); if (r === 'v') voices.set(rest.join('|'), v); else if (r === S.round) audio.set(rest.join('|'), v); });
-    drawTasks(); drawLive(); drawAus();
+    rows.forEach(([k, v]) => { const [r, ...rest] = k.split('|'); if (r === 'v') voices.set(rest.join('|'), v); else if (r === 'i') images.set(rest.join('|'), v); else if (r === S.round) { if (rest[0] === 'img') ansImg.set(rest.slice(1).join('|'), v); else audio.set(rest.join('|'), v); } });
+    purge(); drawTasks(); drawLive(); drawAus();
   });
   save(); drawHead(); showView(S.current >= 0 ? 'live' : 'aufgaben'); startHost();
   addEventListener('beforeunload', e => { if (conns.size) { e.preventDefault(); e.returnValue = ''; } });

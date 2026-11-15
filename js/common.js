@@ -91,8 +91,28 @@ window.AR = window.AR || {};
     pen: '<path d="M4 20l1-4.5L16 4.5l3.5 3.5L8.5 19z"/>',
     list: '<path d="M8 6h12M8 12h12M8 18h12M4 6h.1M4 12h.1M4 18h.1"/>',
     chart: '<path d="M5 20V10M12 20V4M19 20v-7"/>',
-    text: '<path d="M5 6h14M5 11h14M5 16h9"/>'
+    text: '<path d="M5 6h14M5 11h14M5 16h9"/>',
+    camera: '<path d="M4 8.5h3.2l1.6-2.5h6.4l1.6 2.5H20v10.5H4z"/><circle cx="12" cy="13.5" r="3.6"/>',
+    image: '<rect x="3.5" y="5" width="17" height="14" rx="2.5"/><circle cx="9" cy="10" r="1.7"/><path d="M4 17l5-4.5 3.5 3 3-2.5 4.5 4"/>',
+    shield: '<path d="M12 3l7.5 3v5.5c0 4.6-3.2 8-7.5 9.5-4.3-1.5-7.5-4.9-7.5-9.5V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/>',
+    alert: '<path d="M12 4l9 16H3z"/><path d="M12 10v4.5M12 17.5v.1"/>',
+    lock: '<rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/>'
   };
+  // Bild verkleinern und neu als JPEG kodieren. Das entfernt auch versteckte Daten wie GPS-Position (EXIF).
+  AR.shrinkImage = async function (file, max, q) {
+    let bmp;
+    try { bmp = await createImageBitmap(file, { imageOrientation: 'from-image' }); }
+    catch (e) {
+      bmp = await new Promise((res, rej) => { const im = new Image(), u = URL.createObjectURL(file); im.onload = () => { URL.revokeObjectURL(u); res(im); }; im.onerror = rej; im.src = u; });
+    }
+    const k = Math.min(1, max / Math.max(bmp.width, bmp.height));
+    const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(bmp.width * k)); c.height = Math.max(1, Math.round(bmp.height * k));
+    const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(bmp, 0, 0, c.width, c.height);
+    return new Promise(res => c.toBlob(res, 'image/jpeg', q || 0.82));
+  };
+  AR.pickImage = function (cb) { const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.onchange = () => { if (i.files && i.files[0]) cb(i.files[0]); }; i.click(); };
+  AR.fillIcons = () => document.querySelectorAll('[data-ic]').forEach(e => { e.innerHTML = AR.icon(e.dataset.ic); });
+  document.addEventListener('DOMContentLoaded', AR.fillIcons);
   AR.icon = (name, extra) => '<svg class="ic' + (extra ? ' ' + extra : '') + '" viewBox="0 0 24 24" aria-hidden="true">' + (IC[name] || '') + '</svg>';
 
   // Farben für Kinder (Aicher-Palette), damit man Antworten schneller zuordnen kann

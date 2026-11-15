@@ -6,20 +6,22 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Antwort-Runde">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; font-src 'self'; connect-src 'self' https://0.peerjs.com wss://0.peerjs.com; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
 <title>Antwort-Runde</title>
-<link rel="stylesheet" href="css/style.css?v=6">
+<link rel="stylesheet" href="css/style.css?v=9">
 </head>
-<body>
+<body class="kidpage">
 <header class="markise"><div class="kopf">
   <h1 class="schild-titel">Antwort-Runde</h1>
   <span class="platz"></span>
+  <span class="status-kopf" id="stat" hidden><span class="dot warn" id="netDot"></span><span id="netTxt">…</span></span>
   <span class="name-schild" id="nm" hidden></span>
 </div></header>
 <main class="kind" id="app"></main>
-<div class="status" id="stat" hidden><span class="dot warn" id="netDot"></span><span id="netTxt">…</span></div>
 <script src="lib/peerjs.min.js"></script>
-<script src="js/common.js?v=6"></script>
-<script src="js/net.js?v=6"></script>
-<script src="js/schueler.js?v=6"></script>
+<script src="js/common.js?v=9"></script>
+<script src="js/net.js?v=9"></script>
+<script src="js/schueler.js?v=9"></script>
 </body>
 </html>
