@@ -38,6 +38,11 @@
     if (d.t === 'wait') { gate = 'wait'; render(true); return; }
     if (d.t === 'refused') { gate = 'refused'; if (net) net.close(); render(true); return; }
     if (d.t === 'end') { endRound(); return; }
+    if (d.t === 'adopt' && d.pid && me) {   // Lehrkraft ordnet dieses iPad einem bekannten Kind zu
+      me.pid = String(d.pid).slice(0, 20); me.name = String(d.name || me.name).slice(0, 40); AR.store.set(KID, me); showName();
+      if (net) net.send({ t: 'hello', pid: me.pid, name: me.name });
+      return;
+    }
     if (d.t === 'state') {
       if (gate === 'wait') { gate = null; shownSig = ''; }
       if (A.round !== d.round) { A = { round: d.round, answers: {}, drafts: {} }; for (const k in rec) delete rec[k]; for (const k in photo) delete photo[k]; saveA(); }

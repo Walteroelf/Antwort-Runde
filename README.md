@@ -26,6 +26,14 @@ Zahnrad oben rechts: *Antworten sofort übertragen*, *Tempo* (Gemeinsam = alle s
 
 Die Kinder sehen nach dem Abschicken „✓ Angekommen bei der Lehrkraft“. Ändern und nochmal abschicken ist möglich, die neue Antwort ersetzt die alte. Bricht die Verbindung ab, sendet das iPad die Antwort später automatisch nach.
 
+## Wenn ein Kind „neu“ erscheint
+
+Die Zuordnung Klarname → Kind hängt an einer zufälligen Gerätekennung im Browser des iPads, nicht am Pseudonym. Nach dem Beitritt kann ein Kind sein Pseudonym nicht mehr ändern. Eine neue Kennung entsteht nur, wenn die Browserdaten des iPads gelöscht werden (oder Safari sie nach längerer Nichtbenutzung löscht), ein anderes iPad oder ein privates Fenster benutzt wird oder nach „Runde beenden“. Dann erscheint das Kind bei dir als neues Kind ohne Klarnamen. So ordnest du es wieder zu:
+
+- **Kinderliste:** Bei Kindern ohne Klarnamen gibt es „Ist dasselbe Kind wie …“. Danach werden die Antworten zusammengelegt, und das iPad übernimmt den bisherigen Namen.
+- **Beitritt „Nachfragen“:** Ein neues iPad wartet. Bei „Zulassen“ wählst du „Ist wieder: …“ oder „Neues Kind“.
+- **Vorbeugen:** Sobald alle da sind, den Beitritt auf „Gesperrt“ stellen. Ein Kind, das sich eine neue Kennung besorgt, sieht „Diese Runde ist gesperrt“ und muss sich bei dir melden. Oben rechts auf dem iPad steht das Pseudonym des Kindes. Frag im Zweifel danach.
+
 ## Bilder und Fotos
 
 - **Bild zur Aufgabe:** In der Aufgabe „Bild oder Foto wählen“. Das Bild wird verkleinert und erscheint in der Aufgabenkarte auf den iPads.

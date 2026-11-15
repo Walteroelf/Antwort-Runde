@@ -123,6 +123,30 @@
     S.pupils[pid] = { name: String(name || pid).slice(0, 40), last: Date.now() };
     save(); c.send(stateMsg()); drawHead(); drawKinder(); drawLive(); drawAus();
   }
+  // Gleiches Kind, neue Gerätekennung (z. B. Browserdaten gelöscht): neue Kennung wird der alten zugeordnet
+  function adoptInto(newPid, oldPid) {
+    const w = pending.get(newPid); if (!w || !S.pupils[oldPid]) return;
+    w.conn.send({ t: 'adopt', pid: oldPid, name: S.pupils[oldPid].name });
+    pending.delete(newPid); drawHead(); drawKinder();
+  }
+  function mergePupils(b, a) {
+    if (b === a || !S.pupils[b] || !S.pupils[a]) return;
+    S.tasks.forEach(t => {
+      const L = S.answers[t.id]; if (!L || !L[b]) return;
+      const kb = t.id + '|' + b, ka = t.id + '|' + a;
+      if (!L[a] || L[b].ts > L[a].ts) {
+        dropMedia(ka); L[a] = L[b];
+        const au = audio.get(kb), im = ansImg.get(kb);
+        if (au) { audio.set(ka, au); idb.put(S.round + '|' + ka, au); }
+        if (im) { ansImg.set(ka, im); idb.put(S.round + '|img|' + ka, im); }
+      }
+      delete L[b]; dropMedia(kb);
+    });
+    if (!(S.names[a] || '').trim() && (S.names[b] || '').trim()) S.names[a] = S.names[b];
+    conns.forEach((pid, c) => { if (pid === b) { c.send({ t: 'adopt', pid: a, name: S.pupils[a].name }); conns.set(c, a); online.add(a); } });
+    online.delete(b); delete S.pupils[b]; delete S.names[b];
+    save(); drawHead(); redrawAll();
+  }
   function approve(pid) { const w = pending.get(pid); if (w) accept(w.conn, pid, w.name); }
   function deny(pid) { const w = pending.get(pid); if (w) { w.conn.send({ t: 'refused' }); pending.delete(pid); drawHead(); drawKinder(); } }
 
@@ -194,14 +218,18 @@
     hint($('hNames'), S.showNames ? 'warn' : 'ok', S.showNames
       ? '<b>Klarnamen sind sichtbar.</b> Zeige den Bildschirm so nicht an der Tafel oder vor der Klasse.'
       : '<b>Nur Pseudonyme sichtbar.</b> Eingetragene Namen bleiben gespeichert, aber verborgen, bis du sie einschaltest.');
+    const missing = ids.filter(x => !(S.names[x] || '').trim()).length;
+    if (ids.length && missing) $('hNames').appendChild(el('div', 'hinweis warn', '<span>' + AR.icon('alert') + '</span><span><b>' + missing + (missing === 1 ? ' Kind hat' : ' Kinder haben') + ' noch keinen Klarnamen.</b> Wenn jemand seine Gerätekennung verliert (z. B. Browserdaten gelöscht), erscheint er als neues Kind. Über „Ist dasselbe Kind wie …“ ordnest du ihn wieder zu. Mit „Nachfragen“ oder „Gesperrt“ fällt dir das sofort auf.</span>'));
     const w = $('kWait'); w.innerHTML = '';
     if (pending.size) {
       w.appendChild(el('b', null, 'Warten auf Zulassung'));
       pending.forEach((v, pid) => {
         const r = el('div', 'kind-zeile', '<span class="dot warn"></span><span class="n">' + AR.esc(v.name) + '</span>');
-        const ok = el('button', 'mittelknopf klein primaer', AR.icon('check') + 'Zulassen'); ok.onclick = () => approve(pid);
+        const named = Object.keys(S.pupils).sort(byLabel);
+        const sel = el('select'); sel.innerHTML = '<option value="">Neues Kind</option>' + named.map(x => '<option value="' + x + '">Ist wieder: ' + AR.esc(label(x)) + '</option>').join('');
+        const ok = el('button', 'mittelknopf klein primaer', AR.icon('check') + 'Zulassen'); ok.onclick = () => (sel.value ? adoptInto(pid, sel.value) : approve(pid));
         const no = el('button', 'mittelknopf klein', AR.icon('close') + 'Ablehnen'); no.onclick = () => deny(pid);
-        r.append(ok, no); w.appendChild(r);
+        r.append(sel, ok, no); w.appendChild(r);
       });
       if (pending.size > 1) { const all = el('button', 'mittelknopf klein', 'Alle zulassen'); all.onclick = () => [...pending.keys()].forEach(approve); w.appendChild(all); }
     }
@@ -212,7 +240,16 @@
       r.innerHTML = '<span class="dot ' + (online.has(pid) ? 'ok' : '') + '"></span><span class="n">' + AR.esc(S.pupils[pid].name) + '</span>';
       const inp = el('input'); inp.placeholder = 'Echter Name'; inp.value = S.names[pid] || '';
       inp.onchange = () => { S.names[pid] = inp.value; save(); drawLive(); drawAus(); drawKinder(); };
-      r.appendChild(inp); box.appendChild(r);
+      r.appendChild(inp);
+      const targets = ids.filter(x => x !== pid && (S.names[x] || '').trim());
+      if (!(S.names[pid] || '').trim() && targets.length) {
+        const ms = el('select', 'merge'); ms.innerHTML = '<option value="">Ist dasselbe Kind wie …</option>' + targets.sort(byLabel).map(x => '<option value="' + x + '">' + AR.esc(label(x)) + '</option>').join('');
+        ms.onchange = () => {
+          if (ms.value && confirm('„' + S.pupils[pid].name + '“ ist dasselbe Kind wie „' + label(ms.value) + '“?\n\nDie Antworten werden zusammengelegt. Das iPad übernimmt den bisherigen Namen.')) mergePupils(pid, ms.value); else ms.value = '';
+        };
+        r.appendChild(ms);
+      }
+      box.appendChild(r);
     });
   }
   /* ---------- Datenschutz-Hinweise: sagen bei jeder Einstellung, was sie bewirkt ---------- */
