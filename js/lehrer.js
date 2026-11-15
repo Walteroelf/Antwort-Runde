@@ -267,7 +267,7 @@
       : '<b>Aus:</b> Eine Antwort kommt erst zu dir, wenn das Kind „Abschicken“ tippt. Bis dahin bleibt der Entwurf nur auf seinem iPad.');
     hint($('hJoin'), S.join === 'open' ? 'warn' : 'ok',
       S.join === 'open' ? '<b>Offen:</b> Jeder, der den Code kennt oder errät, kann beitreten und Antworten senden. Der Code hat nur 4 Buchstaben. Sperre die Runde, sobald alle da sind.' :
-      S.join === 'ask' ? '<b>Nachfragen:</b> Du bestätigst jedes neue Kind in der Kinderliste („n online“). Bis dahin sehen sie keine Aufgaben, und ihre Antworten werden nicht angenommen. Kinder, die schon dabei waren, verbinden sich selbst wieder.' :
+      S.join === 'ask' ? '<b>Nachfragen:</b> Du bestätigst jedes neue Kind in der Kinderliste (Knopf mit der Kinderzahl oben, z. B. „3 online“). Bis dahin sehen sie keine Aufgaben, und ihre Antworten werden nicht angenommen. Kinder, die schon dabei waren, verbinden sich selbst wieder.' :
       '<b>Gesperrt:</b> Niemand Neues kommt herein. Kinder, die schon in dieser Runde waren, können sich wieder verbinden.');
     hint($('hExpire'), S.expire === 0 || S.expire === 1 ? 'warn' : 'ok', S.expire === 0
       ? '<b>Nie:</b> Antworten, Aufnahmen und Namen bleiben auf diesem Gerät, bis du „Runde beenden“ wählst oder die Browserdaten löschst.'

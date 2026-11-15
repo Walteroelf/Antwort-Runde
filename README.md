@@ -18,7 +18,7 @@ Das Lehrer-Gerät hat drei Reiter, die man von links nach rechts durchgeht:
 2. **Durchführen:** Oben rechts „Code“ tippen: QR-Code und Code füllen den Bildschirm. Kinder scannen, bekommen ein Pseudonym wie „Blauer Falke 42“ (mit „Anderer Name“ änderbar) und warten. Du wählst eine Aufgabe (Nummern) und tippst „Freigeben“. Darunter erscheinen die Antworten live, mit Fortschrittsbalken („7 von 12“) und der Liste, wer noch fehlt.
 3. **Antworten:** Alle Antworten je Aufgabe, dazu Export als Textdatei oder Tabelle (CSV, ein Kind pro Zeile).
 
-Zahnrad oben rechts: *Antworten sofort übertragen*, *Tempo* (Gemeinsam = alle sehen deine freigegebene Aufgabe; Eigenes Tempo = Kinder blättern selbst), automatisch vorlesen, Sprechtempo, „Neue Runde“. Die Anzeige „n online“ öffnet die Kinderliste, dort trägst du echte Namen ein (nur auf diesem Gerät).
+Zahnrad oben rechts: *Antworten sofort übertragen*, *Tempo* (Gemeinsam = alle sehen deine freigegebene Aufgabe; Eigenes Tempo = Kinder blättern selbst), automatisch vorlesen, Sprechtempo, „Neue Runde“. Der Knopf mit der Kinderzahl oben (z. B. „3 online“) öffnet die Kinderliste, dort trägst du echte Namen ein (nur auf diesem Gerät).
 
 **Klarnamen:** Standardmäßig siehst du überall nur die Pseudonyme. Der Schalter „Klarnamen: an/aus“ (in Durchführen, Antworten und in der Kinderliste) zeigt „Anna (Blauer Falke 42)“. Vor dem Zeigen an der Tafel ausschalten. Beim Export (Antworten → Exportieren) gibt es einen eigenen Haken „Klarnamen in die Datei schreiben“, standardmäßig aus. „Neue Runde“ und „Alle Namen löschen“ entfernen die eingetragenen Namen von diesem Gerät.
 
@@ -52,7 +52,7 @@ Unter jeder Einstellung zeigt die App an, was sie für die Daten bedeutet (grün
 |---|---|---|
 | Spracherkennung erlauben | aus | Ein: Der Knopf „Sprechen“ schickt Ton an Apple. Aus: Der Knopf fehlt. |
 | Antworten sofort übertragen | aus | Ein: Du siehst auch unfertige Texte. Aus: Nur nach „Abschicken“. |
-| Neue Kinder dürfen beitreten | offen | *Offen:* jeder mit Code. *Nachfragen:* du bestätigst jedes neue Kind (Kinderliste, „n warten“). *Gesperrt:* niemand Neues, bekannte Kinder kommen wieder. |
+| Neue Kinder dürfen beitreten | offen | *Offen:* jeder mit Code. *Nachfragen:* du bestätigst jedes neue Kind (Kinderliste, Knopf zeigt z. B. „2 warten“). *Gesperrt:* niemand Neues, bekannte Kinder kommen wieder. |
 | Automatisch löschen | 24 Stunden | Antworten, Aufnahmen, Fotos und inaktive Kinder samt Klarnamen werden nach der Zeit gelöscht. Bei bestehenden Installationen bleibt es zunächst „nie“. |
 | Runde beenden und alles löschen | | Löscht alles auf deinem Gerät, die iPads löschen Entwürfe und Antworten und zeigen „Runde beendet“. |
 | Alle Aufgaben löschen | | Löscht Aufgaben, Bilder, eigene Stimm-Aufnahmen und die zugehörigen Antworten. „Runde beenden“ lässt die Aufgaben bewusst stehen. |
