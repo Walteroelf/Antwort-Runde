@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Antwort-Runde · Lehrer-Gerät</title>
-<link rel="stylesheet" href="css/style.css?v=5">
+<link rel="stylesheet" href="css/style.css?v=6">
 </head>
 <body>
 <header class="markise"><div class="kopf">
@@ -74,6 +74,8 @@
       <div class="seg" id="pace"><button data-v="live">Gemeinsam</button><button data-v="self">Eigenes Tempo</button></div>
       <div class="muted klein" id="paceHelp"></div></div>
     <label class="schalter"><input type="checkbox" id="autoRead"> Aufgabe automatisch vorlesen</label>
+    <div class="feld"><label class="schalter"><input type="checkbox" id="autoSend"> Antworten sofort übertragen (ohne „Abschicken“)</label>
+      <div class="muted klein">Die Kinder müssen nichts abschicken. Du siehst ihre Antwort schon beim Schreiben, Aufnahmen kommen nach dem Beenden an. Das schließt auch unfertige Texte ein.</div></div>
     <label class="feld">Sprechtempo der iPad-Stimme
       <select id="rate"><option value="0.7">langsam</option><option value="0.9">normal</option><option value="1.05">zügig</option></select></label>
     <hr style="border:0;border-top:3px solid var(--linie);width:100%">
@@ -103,8 +105,8 @@
 
 <script src="lib/peerjs.min.js"></script>
 <script src="lib/qrcode.js"></script>
-<script src="js/common.js?v=5"></script>
-<script src="js/net.js?v=5"></script>
-<script src="js/lehrer.js?v=5"></script>
+<script src="js/common.js?v=6"></script>
+<script src="js/net.js?v=6"></script>
+<script src="js/lehrer.js?v=6"></script>
 </body>
 </html>

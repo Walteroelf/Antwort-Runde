@@ -4,7 +4,7 @@
 (function () {
   const $ = id => document.getElementById(id);
   const KEY = 'ar.teacher.' + (AR.NET === 'bc' ? 'bc' : 'p');
-  const defaults = () => ({ room: AR.genCode(4), round: AR.rid(6), tasks: [], current: -1, pace: 'live', rate: 0.9, autoRead: true, names: {}, showNames: false, pupils: {}, answers: {} });
+  const defaults = () => ({ room: AR.genCode(4), round: AR.rid(6), tasks: [], current: -1, pace: 'live', rate: 0.9, autoRead: true, names: {}, showNames: false, autoSend: false, pupils: {}, answers: {} });
   let S = Object.assign(defaults(), AR.store.get(KEY, {}));
   if (!S.tasks.length) S.tasks.push(newTask());
 
@@ -69,9 +69,12 @@
     b.onclick = () => { S.showNames = !S.showNames; save(); redrawAll(); };
     return b;
   }
+  let drawTimer = null;
+  // Antworten können beim Tippen sehr oft eintreffen: höchstens ein Neuzeichnen alle 200 ms
+  function scheduleDraw() { if (drawTimer) return; drawTimer = setTimeout(() => { drawTimer = null; drawHead(); drawKinder(); drawLive(); drawAus(); }, 200); }
   function redrawAll() { drawKinder(); drawLive(); drawAus(); }
   const byLabel = (a, b) => label(a).localeCompare(label(b), 'de');
-  function stateMsg() { return { t: 'state', round: S.round, tasks: S.tasks, current: S.current, pace: S.pace, rate: S.rate, autoRead: S.autoRead }; }
+  function stateMsg() { return { t: 'state', round: S.round, tasks: S.tasks, current: S.current, pace: S.pace, rate: S.rate, autoRead: S.autoRead, autoSend: !!S.autoSend }; }
   function broadcast() { conns.forEach((pid, c) => c.send(stateMsg())); }
   let pushTimer = null;
   function pushSoon() { clearTimeout(pushTimer); pushTimer = setTimeout(broadcast, 350); }
@@ -124,6 +127,8 @@
       const key = d.task + '|' + pid;
       const prev = (S.answers[d.task] || {})[pid];
       if (prev && prev.ts > d.ts) { ack(); return; }
+      const gone = !String(d.text || '').trim() && !(d.audio && (d.audio.byteLength || d.audio.size)) && (!prev || !prev.audio || d.dropAudio);
+      if (gone) { if (S.answers[d.task]) delete S.answers[d.task][pid]; save(); ack(); scheduleDraw(); return; }
       let hasAudio = false;
       if (d.audio && (d.audio.byteLength || d.audio.size)) {
         const blob = new Blob([d.audio], { type: d.mime || 'audio/mp4' });
@@ -131,7 +136,8 @@
         audio.set(key, { blob }); idb.put(S.round + '|' + key, { blob }); hasAudio = true;
       } else if (prev && prev.audio && !d.dropAudio) hasAudio = true;
       (S.answers[d.task] = S.answers[d.task] || {})[pid] = { text: String(d.text || '').slice(0, 5000), audio: hasAudio, mime: d.mime || '', ts: d.ts || Date.now() };
-      save(); ack(); fresh = key; drawHead(); drawKinder(); drawLive(); drawAus();
+      if (!prev) fresh = key;
+      save(); ack(); scheduleDraw();
     }
   }
 
@@ -165,7 +171,7 @@
   }
   function drawSettings() {
     document.querySelectorAll('#pace button').forEach(b => b.classList.toggle('an', b.dataset.v === S.pace));
-    $('autoRead').checked = !!S.autoRead; $('rate').value = String(S.rate);
+    $('autoRead').checked = !!S.autoRead; $('autoSend').checked = !!S.autoSend; $('rate').value = String(S.rate);
     $('paceHelp').textContent = S.pace === 'self' ? 'Die Kinder blättern selbst durch alle Aufgaben.' : 'Alle Kinder sehen immer die Aufgabe, die du freigibst.';
   }
 
@@ -420,6 +426,7 @@
   $('bKinder').onclick = () => { $('dKinder').showModal(); drawKinder(); };
   $('bSet').onclick = () => { drawSettings(); $('dSet').showModal(); };
   $('pace').onclick = e => { const v = e.target.dataset.v; if (!v) return; S.pace = v; if (v === 'self' && S.current >= 0) S.current = 0; save(); broadcast(); drawSettings(); drawLive(); };
+  $('autoSend').onchange = e => { S.autoSend = e.target.checked; save(); broadcast(); };
   $('autoRead').onchange = e => { S.autoRead = e.target.checked; save(); broadcast(); };
   $('rate').onchange = e => { S.rate = parseFloat(e.target.value); save(); broadcast(); };
   $('bAdd').onclick = () => { const t = newTask(); S.tasks.push(t); openTask = t.id; save(); broadcast(); drawTasks(); };

@@ -18,9 +18,11 @@ Das Lehrer-Gerät hat drei Reiter, die man von links nach rechts durchgeht:
 2. **Durchführen:** Oben rechts „Code“ tippen: QR-Code und Code füllen den Bildschirm. Kinder scannen, bekommen ein Pseudonym wie „Blauer Falke 42“ (mit „Anderer Name“ änderbar) und warten. Du wählst eine Aufgabe (Nummern) und tippst „Freigeben“. Darunter erscheinen die Antworten live, mit Fortschrittsbalken („7 von 12“) und der Liste, wer noch fehlt.
 3. **Antworten:** Alle Antworten je Aufgabe, dazu Export als Textdatei oder Tabelle (CSV, ein Kind pro Zeile).
 
-Zahnrad oben rechts: *Tempo* (Gemeinsam = alle sehen deine freigegebene Aufgabe; Eigenes Tempo = Kinder blättern selbst), automatisch vorlesen, Sprechtempo, „Neue Runde“. Die Anzeige „n online“ öffnet die Kinderliste, dort trägst du echte Namen ein (nur auf diesem Gerät).
+Zahnrad oben rechts: *Antworten sofort übertragen*, *Tempo* (Gemeinsam = alle sehen deine freigegebene Aufgabe; Eigenes Tempo = Kinder blättern selbst), automatisch vorlesen, Sprechtempo, „Neue Runde“. Die Anzeige „n online“ öffnet die Kinderliste, dort trägst du echte Namen ein (nur auf diesem Gerät).
 
 **Klarnamen:** Standardmäßig siehst du überall nur die Pseudonyme. Der Schalter „Klarnamen: an/aus“ (in Durchführen, Antworten und in der Kinderliste) zeigt „Anna (Blauer Falke 42)“. Vor dem Zeigen an der Tafel ausschalten. Beim Export (Antworten → Exportieren) gibt es einen eigenen Haken „Klarnamen in die Datei schreiben“, standardmäßig aus. „Neue Runde“ und „Alle Namen löschen“ entfernen die eingetragenen Namen von diesem Gerät.
+
+**Ohne „Abschicken“:** Schaltest du im Zahnrad „Antworten sofort übertragen“ ein, verschwindet der Abschicken-Knopf. Geschriebener Text wird kurz nach dem Tippen (etwa 0,7 Sekunden Pause) automatisch zu dir übertragen und aktualisiert sich laufend, Aufnahmen kommen an, sobald das Kind sie beendet. Löscht ein Kind seinen Text, verschwindet die Antwort bei dir wieder. Bedenke, dass du dann auch unfertige Texte siehst. Das Kind bekommt den Hinweis „Deine Lehrkraft sieht deine Antwort sofort“.
 
 Die Kinder sehen nach dem Abschicken „✓ Angekommen bei der Lehrkraft“. Ändern und nochmal abschicken ist möglich, die neue Antwort ersetzt die alte. Bricht die Verbindung ab, sendet das iPad die Antwort später automatisch nach.
 

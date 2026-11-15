@@ -54,13 +54,13 @@
   function hasVoice(t) { return !!(t && t.voice); }
   function voiceReady(t) { return hasVoice(t) && voice[t.id] && voice[t.id].ts === t.voice; }
   function resendAll() {
-    for (const id in A.answers) { const a = A.answers[id]; if (!a.acked) sendAnswer(id); }
+    for (const id in A.answers) { const a = A.answers[id]; if (!a.acked) { if (rec[id]) rec[id].sent = false; sendAnswer(id); } }
   }
   function sendAnswer(id) {
     const a = A.answers[id]; if (!a || !net) return;
-    const r = rec[id];
+    const r = rec[id], withAudio = r && !r.sent; if (r) r.sent = true;   // Aufnahme nur einmal übertragen
     net.send({ t: 'answer', pid: me.pid, name: me.name, round: A.round, task: id, text: a.text || '', ts: a.ts,
-      audio: r ? r.buf : null, mime: r ? r.mime : '', dropAudio: !r });
+      audio: withAudio ? r.buf : null, mime: r ? r.mime : '', dropAudio: !r });
   }
 
   /* ---------- Aufgaben ---------- */
@@ -76,11 +76,11 @@
     if (!st) { app.innerHTML = '<div class="warten"><div class="bild">' + AR.icon('hourglass') + '</div><h2>Ich verbinde …</h2></div>'; return; }
     const t = curTask();
     if (!t) { stopAll(); shownId = null; shownSig = ''; app.innerHTML = '<div class="warten"><div class="bild">' + AR.icon('hourglass') + '</div><h2>Gleich geht es los.</h2><p class="muted" style="margin:0">Warte, bis die Aufgabe kommt.</p></div>'; return; }
-    const sig = [t.id, t.text, t.q, t.mode, st.pace, st.tasks.length].join('\u0001');
+    const sig = [t.id, t.text, t.q, t.mode, st.pace, st.tasks.length, st.autoSend].join('\u0001');
     if (!force && sig === shownSig) return;
     const newTask = t.id !== shownId;
     shownSig = sig; shownId = t.id;
-    if (newTask) stopAll();
+    if (newTask) { flushAuto(); stopAll(); }
     renderTask(t, newTask);
   }
 
@@ -90,7 +90,7 @@
     const canTalk = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
     const mode = t.mode || 'text';
     let h = '<div class="fortschritt"><b>Aufgabe ' + (i + 1) + ' von ' + n + '</b><div class="punkte">' +
-      st.tasks.map((x, k) => '<i class="punkt ' + (k === i ? 'jetzt' : (A.answers[x.id] ? 'fertig' : '')) + '"></i>').join('') + '</div></div>';
+      st.tasks.map((x, k) => '<i class="punkt ' + (k === i ? 'jetzt' : (A.answers[x.id] && (A.answers[x.id].text || A.answers[x.id].audio) ? 'fertig' : '')) + '"></i>').join('') + '</div></div>';
     h += '<div class="tresen aufgabe-karte">' + (t.text ? '<p class="t">' + AR.esc(t.text) + '</p>' : '') + (t.q ? '<p class="q">' + AR.esc(t.q) + '</p>' : '') + '</div>';
     if (hasVoice(t) || (AR.tts.ok && (t.text || t.q))) h += '<button class="grossknopf" id="bRead"></button>';
     h += '<div class="schritt"><h3>Deine Antwort</h3>';
@@ -100,16 +100,16 @@
       else h += '<p class="muted klein" style="margin:0">Tipp: Tippe auf der Tastatur auf das Mikrofon, dann kannst du sprechen.</p>';
     }
     if (mode !== 'text') h += '<div class="aufnahme-box" id="recBox"></div>';
-    h += '</div><button class="grossknopf weiter" id="bSend">' + AR.icon('send') + 'Abschicken</button><div id="sendSt"></div>';
+    h += '</div>' + (st.autoSend ? '' : '<button class="grossknopf weiter" id="bSend">' + AR.icon('send') + 'Abschicken</button>') + '<div id="sendSt"></div>';
     if (self && n > 1) {
       h += '<div class="knopfreihe"><button class="grossknopf leise" id="bPrev"' + (i < 1 ? ' disabled' : '') + '>' + AR.icon('left') + 'Zurück</button>' +
         '<button class="grossknopf leise" id="bNext"' + (i >= n - 1 ? ' disabled' : '') + '>Weiter' + AR.icon('right') + '</button></div>';
     }
     app.innerHTML = h;
-    const ta = document.getElementById('ans'); if (ta) { ta.value = draft; ta.oninput = () => { A.drafts[t.id] = ta.value; saveA(); }; }
+    const ta = document.getElementById('ans'); if (ta) { ta.value = draft; ta.oninput = () => { A.drafts[t.id] = ta.value; saveA(); if (st.autoSend) autoSoon(t); }; }
     const bRead = document.getElementById('bRead'); if (bRead) bRead.onclick = () => toggleRead(t);
     const bTalk = document.getElementById('bTalk'); if (bTalk) bTalk.onclick = () => toggleTalk(ta, bTalk);
-    document.getElementById('bSend').onclick = () => submit(t);
+    const bs = document.getElementById('bSend'); if (bs) bs.onclick = () => submit(t);
     if (document.getElementById('recBox')) renderRec(t);
     const p = document.getElementById('bPrev'), nx = document.getElementById('bNext');
     if (p) p.onclick = () => { ownIdx = Math.max(0, ownIdx - 1); render(true); };
@@ -121,6 +121,10 @@
   function renderStatus() {
     const el = document.getElementById('sendSt'), t = curTask(); if (!el || !t) return;
     const a = A.answers[t.id];
+    if (st.autoSend) {
+      el.innerHTML = !a ? '<p class="muted klein" style="margin:0;text-align:center">Deine Lehrkraft sieht deine Antwort sofort. Du musst nichts abschicken.</p>' : a.acked ? '<div class="meldung gut">' + AR.icon('check') + 'Deine Lehrkraft sieht deine Antwort.</div>' : '<div class="meldung warte">' + AR.icon('hourglass') + 'Wird gesendet …</div>';
+      return;
+    }
     el.innerHTML = !a ? '' : a.acked ? '<div class="meldung gut">' + AR.icon('check') + 'Geschickt. Deine Lehrkraft hat es bekommen.</div>' : '<div class="meldung warte">' + AR.icon('hourglass') + 'Wird gesendet …</div>';
     const b = document.getElementById('bSend'); if (b && a) b.innerHTML = AR.icon('send') + 'Nochmal abschicken';
   }
@@ -199,8 +203,9 @@
         const blob = new Blob(recChunks, { type }); cleanupRec();
         if (!id || !blob.size) return;
         if (rec[id]) URL.revokeObjectURL(rec[id].url);
-        rec[id] = { buf: await blob.arrayBuffer(), mime: type, url: URL.createObjectURL(blob), ts: 0, acked: false };
+        rec[id] = { buf: await blob.arrayBuffer(), mime: type, url: URL.createObjectURL(blob), ts: 0, acked: false, sent: false };
         if (curTask() && curTask().id === id) renderRec(curTask());
+        if (st && st.autoSend) autoSubmit(id);
       };
       recorder.start(); recTimer = setTimeout(stopRec, 90000); renderRec(t);
     } catch (e) {
@@ -208,6 +213,20 @@
     }
   }
   function stopRec() { if (recorder && recorder.state === 'recording') recorder.stop(); }
+
+  /* ---------- Sofort übertragen (Lehrkraft hat „ohne Abschicken“ eingeschaltet) ---------- */
+  let autoTimer = null, autoTask = null;
+  function autoSoon(t) { autoTask = t.id; clearTimeout(autoTimer); autoTimer = setTimeout(flushAuto, 700); }
+  function flushAuto() { clearTimeout(autoTimer); autoTimer = null; if (autoTask) { const id = autoTask; autoTask = null; autoSubmit(id); } }
+  function autoSubmit(id) {
+    const text = ((A.drafts && A.drafts[id]) || '').trim(), r = rec[id];
+    if (!text && !r && !A.answers[id]) return;       // nichts zu senden
+    const ts = Math.max(Date.now(), ((A.answers[id] || {}).ts || 0) + 1);
+    A.answers[id] = { text, ts, acked: false, audio: !!r }; if (r) { r.ts = ts; r.acked = false; }
+    saveA(); sendAnswer(id); if (curTask() && curTask().id === id) renderStatus();
+  }
+  addEventListener('pagehide', flushAuto);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) flushAuto(); });
 
   /* ---------- Abschicken ---------- */
   function submit(t) {
