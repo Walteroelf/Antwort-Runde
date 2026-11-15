@@ -24,7 +24,7 @@
 
   function newTask() { return { id: AR.rid(6), text: '', q: '', mode: 'text', voice: 0, image: 0, photo: false }; }
   function save() { AR.store.set(KEY, S); }
-  const MODES = { text: 'Text', both: 'Text oder Aufnahme', audio: 'Aufnahme' };
+  const MODES = { text: 'Text', both: 'Text oder Aufnahme', audio: 'Aufnahme', none: 'Nur lesen' };
 
   /* ---------- Audio-Ablage (IndexedDB, mit Notlösung im Speicher) ---------- */
   const idb = {
@@ -333,14 +333,16 @@
       '<label class="feld">Die Kinder antworten per<select data-f="mode">' +
       '<option value="text">Schreiben oder Einsprechen (wird Text)</option>' +
       '<option value="both">Text oder Sprachaufnahme</option>' +
-      '<option value="audio">nur Sprachaufnahme</option></select></label>' +
+      '<option value="audio">nur Sprachaufnahme</option>' +
+      '<option value="none">gar nicht (nur lesen und hören)</option></select></label>' +
       '<div class="stimme"></div><div class="stimme bildblock"></div><div class="stimme fotoblock"></div>' +
       '<div class="reihe"><button class="mittelknopf primaer" data-a="show">' + AR.icon('play') + 'Jetzt zeigen</button><span class="platz"></span>' +
       '<button class="mittelknopf klein" data-a="up" aria-label="Nach oben">' + AR.icon('up') + '</button>' +
       '<button class="mittelknopf klein" data-a="down" aria-label="Nach unten">' + AR.icon('down') + '</button>' +
       '<button class="mittelknopf klein warnung" data-a="del">' + AR.icon('trash') + 'Löschen</button></div>';
     e.querySelector('[data-f=text]').value = t.text; e.querySelector('[data-f=q]').value = t.q; e.querySelector('[data-f=mode]').value = t.mode || 'text';
-    drawVoice(e.querySelector('.stimme'), t); drawImageBlock(e.querySelector('.bildblock'), t); drawPhotoBlock(e.querySelector('.fotoblock'), t);
+    drawVoice(e.querySelector('.stimme'), t); drawImageBlock(e.querySelector('.bildblock'), t);
+    if (t.mode === 'none') e.querySelector('.fotoblock').hidden = true; else drawPhotoBlock(e.querySelector('.fotoblock'), t);
     e.oninput = e.onchange = ev => {
       const f = ev.target.dataset.f; if (!f) return;
       t[f] = ev.target.value; save(); pushSoon();
@@ -522,6 +524,11 @@
 
     // Antworten zur gewählten Aufgabe
     const A = $('liveAns'); A.innerHTML = '';
+    if (t.mode === 'none') {
+      A.appendChild(el('div', 'abschnitt-kopf', '<h2>Aufgabe ' + (vi + 1) + '</h2><span class="marke">keine Antwort nötig</span>'));
+      A.appendChild(el('p', 'leer', 'Die Kinder lesen oder hören nur. Bei dieser Aufgabe wird nichts geantwortet.'));
+      fresh = null; return;
+    }
     const k = nAnswers(t.id), N = Object.keys(S.pupils).length;
     const kopf = el('div', 'abschnitt-kopf', '<h2>Antworten zu Aufgabe ' + (vi + 1) + '</h2><span class="marke ' + (N && k >= N ? 'gut' : '') + '">' + k + ' von ' + N + '</span>');
     kopf.appendChild(nameToggle());
@@ -550,7 +557,7 @@
       const id = t.id, open = openAns.has(id), row = el('div', 'zeile' + (open ? ' offen' : ''));
       const p = preview(t), k = nAnswers(id);
       const head = el('button', 'kopfzeile', '<span class="nr">' + (i + 1) + '</span><span class="vorschau' + (p ? '' : ' leer') + '">' + AR.esc(p || 'Leere Aufgabe') + '</span>' +
-        '<span class="marke ' + (N && k >= N ? 'gut' : '') + '">' + k + ' von ' + N + '</span><span class="dreh">' + AR.icon('down') + '</span>');
+        (t.mode === 'none' ? '<span class="marke">keine Antwort</span>' : '<span class="marke ' + (N && k >= N ? 'gut' : '') + '">' + k + ' von ' + N + '</span>') + '<span class="dreh">' + AR.icon('down') + '</span>');
       head.onclick = () => { open ? openAns.delete(id) : openAns.add(id); drawAus(); };
       row.appendChild(head);
       if (open) { const inh = el('div', 'inhalt'); renderAnswers(id, inh, false); row.appendChild(inh); }

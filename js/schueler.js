@@ -135,15 +135,17 @@
     const i = curIdx(), n = st.tasks.length, self = st.pace === 'self';
     const draft = (A.drafts && A.drafts[t.id]) || (A.answers[t.id] && A.answers[t.id].text) || '';
     const canTalk = !!(st.speech && (window.SpeechRecognition || window.webkitSpeechRecognition));
-    const mode = t.mode || 'text';
+    const mode = t.mode || 'text', none = mode === 'none';   // 'none': nur lesen und hören, keine Antwort
     const nav = (id, ic, dis, lbl) => '<button class="rundknopf klein" id="' + id + '" aria-label="' + lbl + '"' + (dis ? ' disabled' : '') + '>' + AR.icon(ic) + '</button>';
     let h = '<div class="fortschritt">' + (self && n > 1 ? nav('bPrev', 'left', i < 1, 'Zurück') : '') +
       '<b class="grow">Aufgabe ' + (i + 1) + ' von ' + n + '</b><div class="punkte">' +
       st.tasks.map((x, k) => '<i class="punkt ' + (k === i ? 'jetzt' : (A.answers[x.id] && (A.answers[x.id].text || A.answers[x.id].audio || A.answers[x.id].img) ? 'fertig' : '')) + '"></i>').join('') + '</div>' +
       (self && n > 1 ? nav('bNext', 'right', i >= n - 1, 'Weiter') : '') + '</div>';
-    h += '<div class="bildschirm"><section class="s-frage"><div class="tresen aufgabe-karte">' + (t.text ? '<p class="t">' + AR.esc(t.text) + '</p>' : '') + (t.image ? '<div id="tImg" class="aufgabe-bild"></div>' : '') + (t.q ? '<p class="q">' + AR.esc(t.q) + '</p>' : '') + '</div>';
+    h += '<div class="bildschirm' + (none ? ' nur-lesen' : '') + '"><section class="s-frage"><div class="tresen aufgabe-karte">' + (t.text ? '<p class="t">' + AR.esc(t.text) + '</p>' : '') + (t.image ? '<div id="tImg" class="aufgabe-bild"></div>' : '') + (t.q ? '<p class="q">' + AR.esc(t.q) + '</p>' : '') + '</div>';
     if (hasVoice(t) || (AR.tts.ok && (t.text || t.q))) h += '<button class="grossknopf" id="bRead"></button>';
-    h += '</section><section class="s-antwort">';
+    h += '</section>';
+    if (none) h += '</div>'; else {
+    h += '<section class="s-antwort">';
     if (mode !== 'audio') h += '<textarea id="ans" placeholder="Schreibe hier deine Antwort …" autocapitalize="sentences" spellcheck="false"></textarea>';
     if (mode !== 'text' || canTalk || t.photo) {
       h += '<div class="werkzeuge">' + (mode !== 'audio' && canTalk ? '<button class="grossknopf leise" id="bTalk">' + AR.icon('mic') + 'Sprechen</button>' : '') +
@@ -151,6 +153,7 @@
         (t.photo ? '<div class="aufnahme-box" id="photoBox"></div>' : '') + '</div>';
     }
     h += '<div id="sendSt"></div>' + (st.autoSend ? '' : '<button class="grossknopf weiter" id="bSend">' + AR.icon('send') + 'Abschicken</button>') + '</section></div>';
+    }
     app.innerHTML = h;
     const ta = document.getElementById('ans'); if (ta) { ta.value = draft; ta.oninput = () => { A.drafts[t.id] = ta.value; saveA(); if (st.autoSend) autoSoon(t); }; }
     const bRead = document.getElementById('bRead'); if (bRead) bRead.onclick = () => toggleRead(t);

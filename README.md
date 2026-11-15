@@ -14,7 +14,7 @@ Reine HTML/JavaScript-Seiten ohne Build-Schritt, geeignet für GitHub Pages. Gle
 
 Das Lehrer-Gerät hat drei Reiter, die man von links nach rechts durchgeht:
 
-1. **Aufgaben:** Aufgaben anlegen. Tippe auf eine Aufgabe, um sie aufzuklappen. Jede hat einen Lesetext (optional), eine Frage (optional) und eine Antwortart (Schreiben/Einsprechen, Text oder Sprachaufnahme, nur Sprachaufnahme). Jede Aufgabe kannst du **mit eigener Stimme einsprechen**: Die Kinder hören dann deine Aufnahme statt der iPad-Stimme. „Mehrere einfügen“ legt aus einem Text mit Leerzeilen viele Aufgaben an (letzte Zeile eines Absatzes = Frage).
+1. **Aufgaben:** Aufgaben anlegen. Tippe auf eine Aufgabe, um sie aufzuklappen. Jede hat einen Lesetext (optional), eine Frage (optional) und eine Antwortart (Schreiben/Einsprechen, Text oder Sprachaufnahme, nur Sprachaufnahme, oder **gar nicht**: Dann ist es nur ein Text zum Lesen und Hören, die Kinder müssen nichts antworten und sehen kein Antwortfeld). Jede Aufgabe kannst du **mit eigener Stimme einsprechen**: Die Kinder hören dann deine Aufnahme statt der iPad-Stimme. „Mehrere einfügen“ legt aus einem Text mit Leerzeilen viele Aufgaben an (letzte Zeile eines Absatzes = Frage).
 2. **Durchführen:** Oben rechts „Code“ tippen: QR-Code und Code füllen den Bildschirm. Kinder scannen, bekommen ein Pseudonym wie „Blauer Falke 42“ (mit „Anderer Name“ änderbar) und warten. Du wählst eine Aufgabe (Nummern) und tippst „Freigeben“. Darunter erscheinen die Antworten live, mit Fortschrittsbalken („7 von 12“) und der Liste, wer noch fehlt.
 3. **Antworten:** Alle Antworten je Aufgabe, dazu Export als Textdatei oder Tabelle (CSV, ein Kind pro Zeile).
 
