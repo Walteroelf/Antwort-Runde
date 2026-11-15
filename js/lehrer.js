@@ -581,6 +581,14 @@
   $('expCsv').onclick = () => exportCsv($('expNames').checked);
   const hasNames = () => Object.values(S.names).some(n => (n || '').trim());
   $('bDelNames').onclick = () => { if (!hasNames() || confirm('Alle eingetragenen Klarnamen von diesem Gerät löschen?')) { S.names = {}; S.showNames = false; save(); redrawAll(); } };
+  $('bTasksDel').onclick = () => {
+    if (!confirm('Alle Aufgaben löschen?\n\nFragen, Texte, Bilder, deine eigenen Stimm-Aufnahmen und alle dazugehörigen Antworten werden von diesem Gerät gelöscht. Das lässt sich nicht rückgängig machen.\n\nHast du vorher exportiert?')) return;
+    if (vrec) stopVRec(true);
+    S.tasks.forEach(t => { idb.del('v|' + t.id); idb.del('i|' + t.id); Object.keys(S.answers[t.id] || {}).forEach(pid => dropMedia(t.id + '|' + pid)); });
+    voices.clear(); images.clear();
+    S.tasks = [newTask()]; S.answers = {}; S.current = -1; vi = 0; openTask = null;
+    save(); broadcast(); $('dSet').close(); drawHead(); showView('aufgaben');
+  };
   $('bNew').onclick = () => {
     if ((total() || Object.keys(S.pupils).length) && !confirm('Runde beenden?\n\nAntworten, Aufnahmen, Kinderliste und Klarnamen werden von diesem Gerät gelöscht. Die iPads löschen ihre Entwürfe und Antworten ebenfalls.\n\nHast du vorher exportiert?')) return;
     const old = [...conns.keys(), ...[...pending.values()].map(v => v.conn)];

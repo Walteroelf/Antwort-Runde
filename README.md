@@ -47,6 +47,7 @@ Unter jeder Einstellung zeigt die App an, was sie für die Daten bedeutet (grün
 | Neue Kinder dürfen beitreten | offen | *Offen:* jeder mit Code. *Nachfragen:* du bestätigst jedes neue Kind (Kinderliste, „n warten“). *Gesperrt:* niemand Neues, bekannte Kinder kommen wieder. |
 | Automatisch löschen | 24 Stunden | Antworten, Aufnahmen, Fotos und inaktive Kinder samt Klarnamen werden nach der Zeit gelöscht. Bei bestehenden Installationen bleibt es zunächst „nie“. |
 | Runde beenden und alles löschen | | Löscht alles auf deinem Gerät, die iPads löschen Entwürfe und Antworten und zeigen „Runde beendet“. |
+| Alle Aufgaben löschen | | Löscht Aufgaben, Bilder, eigene Stimm-Aufnahmen und die zugehörigen Antworten. „Runde beenden“ lässt die Aufgaben bewusst stehen. |
 
 Zusätzlich: Die Seiten erlauben per Sicherheitsvorgabe (CSP) nur Verbindungen zur eigenen Seite und zum PeerJS-Server, und geben beim Aufruf keine Herkunftsadresse weiter. Auf dem iPad verfallen Entwürfe und Antworten nach 24 Stunden von selbst. Wer einen eigenen PeerJS-Server nutzt, muss dessen Adresse in `js/net.js` und in der `connect-src`-Zeile der HTML-Dateien eintragen.
 

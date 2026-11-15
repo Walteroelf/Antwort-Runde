@@ -6,7 +6,7 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; font-src 'self'; connect-src 'self' https://0.peerjs.com wss://0.peerjs.com; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Antwort-Runde · Lehrer-Gerät</title>
-<link rel="stylesheet" href="css/style.css?v=10">
+<link rel="stylesheet" href="css/style.css?v=11">
 </head>
 <body>
 <header class="markise"><div class="kopf">
@@ -94,7 +94,9 @@
 
     <hr style="border:0;border-top:3px solid var(--linie);width:100%">
     <button class="mittelknopf warnung" id="bNew"><span data-ic="trash"></span>Runde beenden und alles löschen</button>
-    <div class="hinweis"><span data-ic="shield"></span><span>Löscht Antworten, Aufnahmen, Kinderliste und Klarnamen auf diesem Gerät. Die iPads löschen ihre Entwürfe und Antworten ebenfalls und zeigen „Runde beendet“. Deine Aufgaben und eigenen Aufnahmen bleiben. Exportiere vorher, falls du die Antworten brauchst.</span></div>
+    <div class="hinweis"><span data-ic="shield"></span><span>Löscht Antworten, Aufnahmen, Kinderliste und Klarnamen auf diesem Gerät. Die iPads löschen ihre Entwürfe und Antworten ebenfalls und zeigen „Runde beendet“. Deine Aufgaben (Fragen, Bilder, eigene Aufnahmen) bleiben erhalten. Zum Löschen siehe „Alle Aufgaben löschen“. Exportiere vorher, falls du die Antworten brauchst.</span></div>
+    <button class="mittelknopf warnung" id="bTasksDel"><span data-ic="trash"></span>Alle Aufgaben löschen</button>
+    <div class="hinweis warn"><span data-ic="alert"></span><span>Löscht alle Aufgaben mit Texten, Fragen, Bildern und deinen eigenen Stimm-Aufnahmen sowie die dazugehörigen Antworten von diesem Gerät. Das lässt sich nicht rückgängig machen.</span></div>
     <div class="muted klein">Antwort-Runde <span id="ver"></span></div>
   </div>
 </dialog>
@@ -122,8 +124,8 @@
 
 <script src="lib/peerjs.min.js"></script>
 <script src="lib/qrcode.js"></script>
-<script src="js/common.js?v=10"></script>
-<script src="js/net.js?v=10"></script>
-<script src="js/lehrer.js?v=10"></script>
+<script src="js/common.js?v=11"></script>
+<script src="js/net.js?v=11"></script>
+<script src="js/lehrer.js?v=11"></script>
 </body>
 </html>
