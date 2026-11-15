@@ -12,19 +12,13 @@ Reine HTML/JavaScript-Seiten ohne Build-Schritt, geeignet für GitHub Pages. Gle
 
 ## Ablauf
 
-1. **Lehrer-Gerät:** `lehrer.html` öffnen. Oben stehen QR-Code und Code. „Code groß zeigen“ füllt den Bildschirm (für Beamer oder Tafel).
-2. **Aufgaben** eintragen. Jede Aufgabe hat einen Lesetext (optional), eine Frage (optional) und eine Antwortart:
-   - *Schreiben oder Einsprechen als Text*
-   - *Text oder Sprachaufnahme*
-   - *nur Sprachaufnahme*
-   Zusätzlich kannst du jede Aufgabe **mit eigener Stimme einsprechen** („🎙️ Mit eigener Stimme einsprechen“). Die Kinder hören dann deine Aufnahme statt der iPad-Stimme. Text und Frage gehören in dieselbe Aufnahme.
-   „Mehrere einfügen“ legt aus einem Text mit Leerzeilen mehrere Aufgaben an (letzte Zeile eines Absatzes = Frage).
-3. **Kinder:** QR-Code scannen, „Los geht’s“. Jedes Kind bekommt ein Pseudonym wie „Blauer Falke 42“ (mit 🎲 änderbar). Ab dann verbindet sich das iPad von selbst wieder.
-4. **Freigeben:**
-   - *Gemeinsam:* Alle sehen die Aufgabe, die du freigibst (Weiter/Zurück/Pause).
-   - *Eigenes Tempo:* Alle Aufgaben sind offen, die Kinder blättern selbst.
-5. **Antworten** erscheinen im Tab „Antworten“ live, mit Fortschrittsbalken („7 von 12“). Texte kannst du dir vorlesen lassen, Aufnahmen direkt abspielen.
-6. **Export:** Textdatei oder Tabelle (CSV für Excel, ein Kind pro Zeile).
+Das Lehrer-Gerät hat drei Reiter, die man von links nach rechts durchgeht:
+
+1. **Aufgaben:** Aufgaben anlegen. Tippe auf eine Aufgabe, um sie aufzuklappen. Jede hat einen Lesetext (optional), eine Frage (optional) und eine Antwortart (Schreiben/Einsprechen, Text oder Sprachaufnahme, nur Sprachaufnahme). Jede Aufgabe kannst du **mit eigener Stimme einsprechen**: Die Kinder hören dann deine Aufnahme statt der iPad-Stimme. „Mehrere einfügen“ legt aus einem Text mit Leerzeilen viele Aufgaben an (letzte Zeile eines Absatzes = Frage).
+2. **Durchführen:** Oben rechts „Code“ tippen: QR-Code und Code füllen den Bildschirm. Kinder scannen, bekommen ein Pseudonym wie „Blauer Falke 42“ (mit „Anderer Name“ änderbar) und warten. Du wählst eine Aufgabe (Nummern) und tippst „Freigeben“. Darunter erscheinen die Antworten live, mit Fortschrittsbalken („7 von 12“) und der Liste, wer noch fehlt.
+3. **Antworten:** Alle Antworten je Aufgabe, dazu Export als Textdatei oder Tabelle (CSV, ein Kind pro Zeile).
+
+Zahnrad oben rechts: *Tempo* (Gemeinsam = alle sehen deine freigegebene Aufgabe; Eigenes Tempo = Kinder blättern selbst), automatisch vorlesen, Sprechtempo, „Neue Runde“. Die Anzeige „n online“ öffnet die Kinderliste, dort trägst du echte Namen ein (nur auf diesem Gerät).
 
 Die Kinder sehen nach dem Abschicken „✓ Angekommen bei der Lehrkraft“. Ändern und nochmal abschicken ist möglich, die neue Antwort ersetzt die alte. Bricht die Verbindung ab, sendet das iPad die Antwort später automatisch nach.
 
@@ -68,12 +62,17 @@ Die Lehrer-Seite muss offen bleiben, solange die Kinder antworten. Lädst du sie
 - Keine Stimme beim Vorlesen: Lautlos-Schalter und Lautstärke am iPad prüfen.
 - Aufnahme geht nicht: Safari → Einstellungen für diese Website → Mikrofon „Erlauben“.
 
+## Gestaltung
+
+Angelehnt an die Kirmes-Kiosk-App (Erscheinungsbild München 1972, Otl Aicher): helle Farben, flache Flächen, Dunkelblau statt Schwarz, Markise, kräftige Knöpfe. Eigene Linien-Symbole, keine Emojis. Schriften Andika (gut lesbar) und Grandstander, lokal in `schriften/` (SIL Open Font License). Hell- und Dunkelmodus folgen dem Gerät.
+
 ## Technik
 
 ```
 index.html  lehrer.html  schueler.html
-css/style.css
-js/common.js    Hilfen, Speicher, QR, Pseudonyme, Sprachausgabe
+css/style.css    Gestaltung
+schriften/      Andika, Grandstander (lokal)
+js/common.js    Hilfen, Speicher, QR, Symbole, Pseudonyme, Sprachausgabe
 js/net.js       PeerJS/WebRTC oder ?net=bc (BroadcastChannel für Tests)
 js/lehrer.js    js/schueler.js
 lib/            PeerJS, qrcode-generator (lokal, MIT)

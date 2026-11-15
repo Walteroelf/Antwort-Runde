@@ -73,9 +73,9 @@
 
   function render(force) {
     if (!me) return renderJoin();
-    if (!st) { app.innerHTML = '<div class="center big">Verbinde mit der Lehrkraft …</div>'; return; }
+    if (!st) { app.innerHTML = '<div class="warten"><div class="bild">' + AR.icon('hourglass') + '</div><h2>Ich verbinde …</h2></div>'; return; }
     const t = curTask();
-    if (!t) { stopAll(); shownId = null; shownSig = ''; app.innerHTML = '<div class="center"><div style="font-size:4rem">⏳</div><div class="big">Gleich geht es los.</div><div class="muted">Warte, bis die Lehrkraft die Aufgabe freigibt.</div></div>'; return; }
+    if (!t) { stopAll(); shownId = null; shownSig = ''; app.innerHTML = '<div class="warten"><div class="bild">' + AR.icon('hourglass') + '</div><h2>Gleich geht es los.</h2><p class="muted" style="margin:0">Warte, bis die Aufgabe kommt.</p></div>'; return; }
     const sig = [t.id, t.text, t.q, t.mode, st.pace, st.tasks.length].join('\u0001');
     if (!force && sig === shownSig) return;
     const newTask = t.id !== shownId;
@@ -89,20 +89,21 @@
     const draft = (A.drafts && A.drafts[t.id]) || (A.answers[t.id] && A.answers[t.id].text) || '';
     const canTalk = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
     const mode = t.mode || 'text';
-    let h = '<div class="head"><span>' + AR.esc(me.name) + '</span><span>Aufgabe ' + (i + 1) + ' von ' + n + '</span></div>';
-    h += '<div class="qbox">' + (t.text ? '<p class="txt">' + AR.esc(t.text) + '</p>' : '') + (t.q ? '<p class="q">' + AR.esc(t.q) + '</p>' : '') + '</div>';
-    if (hasVoice(t) || (AR.tts.ok && (t.text || t.q))) h += '<button class="btn primary read" id="bRead">🔊 Vorlesen</button>';
+    let h = '<div class="fortschritt"><b>Aufgabe ' + (i + 1) + ' von ' + n + '</b><div class="punkte">' +
+      st.tasks.map((x, k) => '<i class="punkt ' + (k === i ? 'jetzt' : (A.answers[x.id] ? 'fertig' : '')) + '"></i>').join('') + '</div></div>';
+    h += '<div class="tresen aufgabe-karte">' + (t.text ? '<p class="t">' + AR.esc(t.text) + '</p>' : '') + (t.q ? '<p class="q">' + AR.esc(t.q) + '</p>' : '') + '</div>';
+    if (hasVoice(t) || (AR.tts.ok && (t.text || t.q))) h += '<button class="grossknopf" id="bRead"></button>';
+    h += '<div class="schritt"><h3>Deine Antwort</h3>';
     if (mode !== 'audio') {
-      h += '<textarea id="ans" placeholder="Schreibe hier deine Antwort …" autocapitalize="sentences" spellcheck="false"></textarea>';
-      if (canTalk) h += '<button class="btn bigbtn" id="bTalk">🎤 Sprechen und aufschreiben lassen</button>';
-      else h += '<div class="small muted">Tipp: Auf der Tastatur das Mikrofon antippen, dann kannst du sprechen.</div>';
+      h += '<textarea id="ans" placeholder="Schreibe hier …" autocapitalize="sentences" spellcheck="false"></textarea>';
+      if (canTalk) h += '<button class="grossknopf leise" id="bTalk">' + AR.icon('mic') + 'Sprechen, ich schreibe es auf</button>';
+      else h += '<p class="muted klein" style="margin:0">Tipp: Tippe auf der Tastatur auf das Mikrofon, dann kannst du sprechen.</p>';
     }
-    if (mode !== 'text') h += '<div class="rec" id="recBox"></div>';
-    h += '<button class="btn good bigbtn" id="bSend">Abschicken</button><div class="center small" id="sendSt"></div>';
+    if (mode !== 'text') h += '<div class="aufnahme-box" id="recBox"></div>';
+    h += '</div><button class="grossknopf weiter" id="bSend">' + AR.icon('send') + 'Abschicken</button><div id="sendSt"></div>';
     if (self && n > 1) {
-      h += '<div class="row" style="justify-content:space-between"><button class="btn" id="bPrev"' + (i < 1 ? ' disabled' : '') + '>◀ Zurück</button>' +
-        '<div class="dots">' + st.tasks.map((x, k) => '<i class="' + (k === i ? 'cur' : (A.answers[x.id] ? 'done' : '')) + '"></i>').join('') + '</div>' +
-        '<button class="btn" id="bNext"' + (i >= n - 1 ? ' disabled' : '') + '>Weiter ▶</button></div>';
+      h += '<div class="knopfreihe"><button class="grossknopf leise" id="bPrev"' + (i < 1 ? ' disabled' : '') + '>' + AR.icon('left') + 'Zurück</button>' +
+        '<button class="grossknopf leise" id="bNext"' + (i >= n - 1 ? ' disabled' : '') + '>Weiter' + AR.icon('right') + '</button></div>';
     }
     app.innerHTML = h;
     const ta = document.getElementById('ans'); if (ta) { ta.value = draft; ta.oninput = () => { A.drafts[t.id] = ta.value; saveA(); }; }
@@ -120,29 +121,29 @@
   function renderStatus() {
     const el = document.getElementById('sendSt'), t = curTask(); if (!el || !t) return;
     const a = A.answers[t.id];
-    el.textContent = !a ? '' : a.acked ? '✓ Angekommen bei der Lehrkraft' : '… wird gesendet';
-    el.style.color = a && a.acked ? 'var(--ok)' : 'var(--muted)';
+    el.innerHTML = !a ? '' : a.acked ? '<div class="meldung gut">' + AR.icon('check') + 'Geschickt. Deine Lehrkraft hat es bekommen.</div>' : '<div class="meldung warte">' + AR.icon('hourglass') + 'Wird gesendet …</div>';
+    const b = document.getElementById('bSend'); if (b && a) b.innerHTML = AR.icon('send') + 'Nochmal abschicken';
   }
 
   /* ---------- Vorlesen ---------- */
   function updateReadBtn(t) {
     const b = document.getElementById('bRead'); if (!b) return;
     const wait = hasVoice(t) && !voiceReady(t);
-    b.disabled = wait; b.textContent = wait ? '⏳ Aufnahme lädt …' : speaking ? '⏹ Stopp' : '🔊 Vorlesen';
+    b.disabled = wait; b.innerHTML = wait ? AR.icon('hourglass') + 'Aufnahme lädt …' : speaking ? AR.icon('stop') + 'Stopp' : AR.icon('speaker') + 'Vorlesen';
     if (!wait && !b._autoDone && t.id === shownId && b._wantAuto) { b._autoDone = true; toggleRead(t, true); }
   }
-  function endSpeak() { speaking = false; const bb = document.getElementById('bRead'); if (bb && !bb.disabled) bb.textContent = '🔊 Vorlesen'; }
+  function endSpeak() { speaking = false; const bb = document.getElementById('bRead'); if (bb && !bb.disabled) bb.innerHTML = AR.icon('speaker') + 'Vorlesen'; }
   function toggleRead(t, autostart) {
     const b = document.getElementById('bRead');
-    if (speaking && !autostart) { stopSpeech(); if (b) b.textContent = '🔊 Vorlesen'; return; }
+    if (speaking && !autostart) { stopSpeech(); if (b) b.innerHTML = AR.icon('speaker') + 'Vorlesen'; return; }
     if (hasVoice(t)) {
       if (!voiceReady(t)) return;
-      stopSpeech(); speaking = true; if (b) b.textContent = '⏹ Stopp';
+      stopSpeech(); speaking = true; if (b) b.innerHTML = AR.icon('stop') + 'Stopp';
       vplay = new Audio(voice[t.id].url); vplay.onended = vplay.onerror = endSpeak;
       vplay.play().catch(endSpeak);
       return;
     }
-    speaking = true; if (b) b.textContent = '⏹ Stopp';
+    speaking = true; if (b) b.innerHTML = AR.icon('stop') + 'Stopp';
     AR.tts.speak([t.text, t.q], st.rate, endSpeak);
   }
   function stopSpeech() { AR.tts.stop(); if (vplay) { vplay.onended = vplay.onerror = null; vplay.pause(); vplay = null; } speaking = false; }
@@ -163,9 +164,9 @@
       let s = ''; for (let i = 0; i < e.results.length; i++) s += e.results[i][0].transcript;
       ta.value = base + s; ta.dispatchEvent(new Event('input'));
     };
-    const end = () => { if (recog === r) recog = null; btn.textContent = '🎤 Sprechen und aufschreiben lassen'; btn.classList.remove('danger'); };
+    const end = () => { if (recog === r) recog = null; btn.innerHTML = AR.icon('mic') + 'Sprechen, ich schreibe es auf'; btn.classList.remove('aufnahme'); };
     r.onend = end; r.onerror = e => { end(); if (e.error === 'not-allowed' || e.error === 'service-not-allowed') alert('Das Mikrofon oder Diktieren ist nicht erlaubt. Tippe auf der Tastatur das Mikrofon an.'); };
-    btn.textContent = '⏹ Fertig gesprochen'; btn.classList.add('danger');
+    btn.innerHTML = AR.icon('stop') + 'Fertig gesprochen'; btn.classList.add('aufnahme');
     try { r.start(); } catch (e) { end(); }
   }
 
@@ -178,12 +179,11 @@
   function renderRec(t) {
     const box = document.getElementById('recBox'); if (!box) return;
     const r = rec[t.id], recording = recorder && recorder.state === 'recording' && recTask === t.id;
-    box.classList.toggle('on', !!recording);
-    if (!window.MediaRecorder || !navigator.mediaDevices) { box.innerHTML = '<div class="small muted">Aufnehmen geht auf diesem Gerät nicht.</div>'; return; }
+    if (!window.MediaRecorder || !navigator.mediaDevices) { box.innerHTML = '<p class="muted klein" style="margin:0">Aufnehmen geht auf diesem Gerät nicht.</p>'; return; }
     box.innerHTML = '';
     if (r && !recording) { const au = document.createElement('audio'); au.controls = true; au.src = r.url; box.appendChild(au); }
-    const b = document.createElement('button'); b.className = 'btn bigbtn';
-    b.textContent = recording ? '⏹ Aufnahme beenden' : r ? '🎙️ Neu aufnehmen' : '🎙️ Aufnahme starten';
+    const b = document.createElement('button'); b.className = 'grossknopf leise' + (recording ? ' aufnahme' : '');
+    b.innerHTML = recording ? AR.icon('stop') + 'Aufnahme beenden' : r ? AR.icon('rec') + 'Neu aufnehmen' : AR.icon('rec') + 'Aufnahme starten';
     b.onclick = () => recording ? stopRec() : startRec(t);
     box.appendChild(b);
   }
@@ -219,7 +219,7 @@
     const ts = Date.now();
     A.answers[t.id] = { text, ts, acked: false, audio: !!r }; if (r) { r.ts = ts; r.acked = false; }
     saveA(); sendAnswer(t.id); renderStatus();
-    const b = document.getElementById('bSend'); b.textContent = '✓ Gesendet. Antwort ändern und nochmal abschicken?';
+    
     if (st.pace === 'self' && curIdx() < st.tasks.length - 1) setTimeout(() => { if (curTask() && curTask().id === t.id) { ownIdx++; render(true); } }, 900);
   }
 
@@ -227,22 +227,24 @@
   function renderJoin() {
     const room = hashRoom || (me && me.room) || '';
     let name = AR.pseudonym();
-    app.innerHTML = '<div class="center" style="width:100%"><div style="font-size:3.5rem">✍️</div><h1>Antwort-Runde</h1>' +
-      '<p class="muted">Dein Name in dieser Runde:</p><div class="big" id="nm" style="font-weight:800"></div>' +
-      '<p><button class="btn small" id="bRoll">🎲 anderer Name</button></p>' +
-      (room ? '<p class="muted">Raum <b>' + room + '</b></p>' : '<p class="muted">Code von der Lehrkraft:</p><p><input id="code" maxlength="4" size="5" autocapitalize="characters" autocomplete="off" style="font-size:2rem;text-align:center;letter-spacing:.2em;text-transform:uppercase"></p>') +
-      '<button class="btn primary bigbtn" id="bGo" style="width:100%">Los geht’s</button></div>';
-    const nm = document.getElementById('nm'); nm.textContent = name;
+    document.getElementById('nm').hidden = true;
+    app.innerHTML = '<div class="warten"><div class="bild">' + AR.icon('pen') + '</div><h2>Hallo!</h2>' +
+      '<p class="muted" style="margin:0">So heißt du in dieser Runde:</p><div class="namensschild" id="nmBig"></div>' +
+      '<button class="mittelknopf" id="bRoll">' + AR.icon('dice') + 'Anderer Name</button>' +
+      (room ? '' : '<label class="feld" style="justify-items:center">Code von der Lehrkraft<input id="code" maxlength="4" size="5" autocapitalize="characters" autocomplete="off" style="font-size:32px;text-align:center;letter-spacing:.2em;text-transform:uppercase;width:200px"></label>') +
+      '<button class="grossknopf weiter" id="bGo" style="margin-top:8px">Los geht’s' + AR.icon('right') + '</button></div>';
+    const nm = document.getElementById('nmBig'); nm.textContent = name;
     document.getElementById('bRoll').onclick = () => { name = AR.pseudonym(); nm.textContent = name; };
     document.getElementById('bGo').onclick = () => {
       const code = room || (document.getElementById('code').value || '').toUpperCase().replace(/[^A-Z]/g, '');
       if (code.length !== 4) { alert('Der Code hat 4 Buchstaben.'); return; }
-      me = { pid: AR.rid(10), name, room: code }; AR.store.set(KID, me); interacted = true; app.innerHTML = ''; connect(); render();
+      me = { pid: AR.rid(10), name, room: code }; AR.store.set(KID, me); interacted = true; showName(); app.innerHTML = ''; connect(); render();
     };
   }
+  function showName() { const n = document.getElementById('nm'); if (me) { n.textContent = me.name; n.hidden = false; document.getElementById('stat').hidden = false; } }
 
   /* ---------- Start ---------- */
   if (me && hashRoom && hashRoom !== me.room) { me = Object.assign({}, me, { room: hashRoom }); AR.store.set(KID, me); }
-  if (me) { connect(); render(); } else renderJoin();
+  if (me) { showName(); connect(); render(); } else renderJoin();
   addEventListener('hashchange', () => { if (me && hashRoom && hashRoom !== me.room) location.reload(); });
 })();

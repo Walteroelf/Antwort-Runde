@@ -1,77 +1,238 @@
-/* Antwort-Runde */
-:root{
-  --bg:#f4f6fb; --panel:#ffffff; --panel2:#e8edf7; --line:#cfd7e6;
-  --text:#1b2433; --muted:#5b687d; --accent:#2563eb; --ok:#1f9d57; --bad:#d64545; --warn:#c98a00; --radius:16px;
+/* Antwort-Runde: Gestaltung angelehnt an Kirmes-Kiosk (München 1972, Otl Aicher):
+   helle, heitere Farben, flache Flächen, Dunkelblau statt Schwarz, Markise, Schilder, kräftige Knöpfe.
+   Schriften liegen lokal in schriften/ (SIL Open Font License). */
+@font-face { font-family: "Andika"; font-weight: 400; font-display: swap; src: url("../schriften/andika-400.woff2") format("woff2"); }
+@font-face { font-family: "Andika"; font-weight: 700; font-display: swap; src: url("../schriften/andika-700.woff2") format("woff2"); }
+@font-face { font-family: "Grandstander"; font-weight: 700 900; font-display: swap; src: url("../schriften/grandstander.woff2") format("woff2"); }
+
+:root {
+  --blau: #3d9ad6; --hellblau: #9fd3f0; --gruen: #2f9e55; --gelb: #ffd200; --orange: #f39325;
+  --himmel: #f5f7f9; --tresen: #ffffff; --flaeche: #eef1f4;
+  --holz: #1d3a5c; --holz-hell: #5b7491;
+  --markise: #1f6fae; --auf-markise: #ffffff;
+  --senf: #9fd3f0; --auf-senf: #12304f;
+  --gut: #2f9e55; --gut-hell: #e3f3e8; --gut-dunkel: #1d5e25;
+  --hm: #c76f0a; --hm-hell: #fdf0dc;
+  --bad: #c0392b;
+  --linie: #dfe5ec;
+  --schrift: "Andika", system-ui, sans-serif;
+  --anzeige: "Grandstander", "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
+  color-scheme: light;
 }
-@media (prefers-color-scheme: dark){
-  :root{ --bg:#0f1420; --panel:#182036; --panel2:#222c47; --line:#2f3b5e; --text:#eef2ff; --muted:#9aa6c4; --accent:#5b97ff; --ok:#35d07f; --bad:#ff7070; --warn:#ffc44d; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --himmel: #121c27; --tresen: #1b2735; --flaeche: #243345; --holz: #e8f0f7; --holz-hell: #9fb3c8;
+    --markise: #2c6fa6; --senf: #9fd3f0; --auf-senf: #12304f;
+    --gut: #45b86b; --gut-hell: #17331f; --gut-dunkel: #1d5e25; --hm: #f3a24a; --hm-hell: #3a2914; --bad: #ff8a7a; --linie: #2c3d50; color-scheme: dark;
+  }
 }
-*{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-html,body{ margin:0; min-height:100%; }
-body{ background:var(--bg); color:var(--text); font:17px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; }
-h1,h2,h3{ margin:.2em 0 .4em; line-height:1.15; }
-button{ font:inherit; color:inherit; cursor:pointer; }
-.hidden{ display:none !important; }
-.muted{ color:var(--muted); } .small{ font-size:.85em; }
-.row{ display:flex; gap:12px; align-items:center; flex-wrap:wrap; } .grow{ flex:1; min-width:0; }
-.wrap{ max-width:980px; margin:0 auto; padding:18px 16px 80px; }
 
-.btn{ background:var(--panel2); border:2px solid var(--line); border-radius:14px; padding:10px 18px; font-weight:600; min-height:46px; }
-.btn:active{ transform:scale(.97); }
-.btn.primary{ background:var(--accent); border-color:var(--accent); color:#fff; }
-.btn.good{ background:var(--ok); border-color:var(--ok); color:#fff; }
-.btn.danger{ background:transparent; border-color:var(--bad); color:var(--bad); }
-.btn.small{ min-height:36px; padding:5px 12px; font-size:.9rem; }
-.btn:disabled{ opacity:.45; }
-.card{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:16px; margin:0 0 14px; }
-input,select,textarea{ font:inherit; background:var(--panel); color:var(--text); border:2px solid var(--line); border-radius:12px; padding:10px 12px; max-width:100%; }
-input,select{ min-height:44px; }
-textarea{ width:100%; resize:vertical; min-height:90px; }
-.seg{ display:inline-flex; border:2px solid var(--line); border-radius:14px; overflow:hidden; }
-.seg button{ border:0; background:transparent; padding:9px 14px; font-weight:600; }
-.seg button.on{ background:var(--accent); color:#fff; }
-.dot{ display:inline-block; width:11px; height:11px; border-radius:50%; background:var(--muted); }
-.dot.ok{ background:var(--ok); } .dot.bad{ background:var(--bad); } .dot.warn{ background:var(--warn); }
-.tag{ display:inline-block; padding:2px 10px; border-radius:99px; background:var(--panel2); font-size:.85em; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; }
+body {
+  background: var(--himmel); color: var(--holz);
+  font-family: var(--schrift); font-size: 19px; line-height: 1.4;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-bottom: 48px;
+}
+[hidden] { display: none !important; }
+h1, h2, h3 { font-family: var(--anzeige); margin: 0; line-height: 1.2; }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible { outline: 4px solid var(--senf); outline-offset: 3px; }
+.muted { color: var(--holz-hell); }
+.klein { font-size: 16px; }
+svg.ic { width: 1.25em; height: 1.25em; flex: none; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; vertical-align: -.2em; }
+svg.ic .f { fill: currentColor; stroke: none; }
 
-/* Startseite */
-.tiles{ display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px; margin:22px 0; }
-.tile{ display:block; text-decoration:none; color:inherit; background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:20px; }
-.tile .ic{ font-size:2.2rem; }
+/* ---------- Markise und Kopf ---------- */
+.markise {
+  margin-left: calc(-1 * max(16px, env(safe-area-inset-left, 0px)));
+  margin-right: calc(-1 * max(16px, env(safe-area-inset-right, 0px)));
+  padding-top: env(safe-area-inset-top, 0px);
+  background: repeating-linear-gradient(90deg, var(--markise) 0 56px, #fff 56px 112px);
+  position: relative;
+}
+.markise::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: -18px; height: 18px;
+  background: radial-gradient(circle at 28px 0, var(--markise) 27px, transparent 28px) 0 0 / 112px 18px repeat-x,
+              radial-gradient(circle at 84px 0, #fff 27px, transparent 28px) 0 0 / 112px 18px repeat-x;
+}
+.kopf { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 12px max(16px, env(safe-area-inset-right, 0px)) 12px max(16px, env(safe-area-inset-left, 0px)); }
+.kopf .platz { flex: 1; }
+.schild-titel {
+  font-weight: 900; font-size: clamp(22px, 4.5vw, 34px); letter-spacing: .02em;
+  background: var(--tresen); color: var(--holz); border: 4px solid var(--holz); border-radius: 14px;
+  padding: 0 16px; box-shadow: 0 4px 0 var(--holz); margin: 0;
+}
+.rundknopf {
+  width: 54px; height: 54px; border-radius: 50%; border: 3px solid var(--holz);
+  background: var(--tresen); display: grid; place-items: center; box-shadow: 0 3px 0 var(--holz); padding: 0;
+}
+.rundknopf svg.ic { width: 28px; height: 28px; }
+.rundknopf:active, .mittelknopf:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--holz); }
 
-/* Lehrer */
-.top{ display:flex; gap:16px; align-items:center; flex-wrap:wrap; }
-.qrbox canvas{ width:170px; height:170px; border-radius:12px; border:1px solid var(--line); image-rendering:pixelated; }
-.code{ font-size:2.6rem; font-weight:800; letter-spacing:.18em; font-variant-numeric:tabular-nums; }
-.tabs{ display:flex; gap:8px; margin:16px 0 12px; flex-wrap:wrap; }
-.task{ border:1px solid var(--line); border-radius:14px; padding:12px; margin-bottom:12px; background:var(--panel); }
-.task.live{ border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent); }
-.task .nr{ font-weight:800; color:var(--accent); }
-.ans{ border-top:1px solid var(--line); padding:10px 0; }
-.ans:first-child{ border-top:0; }
-.ans .who{ font-weight:700; }
-.ans .txt{ white-space:pre-wrap; font-size:1.05rem; margin:4px 0; }
-.ans audio{ width:100%; max-width:420px; height:38px; }
-.bar{ height:10px; background:var(--panel2); border-radius:99px; overflow:hidden; } .bar > i{ display:block; height:100%; background:var(--ok); width:0; transition:width .3s; }
-.pupil{ display:inline-flex; gap:8px; align-items:center; padding:6px 12px; border:1px solid var(--line); border-radius:99px; margin:0 8px 8px 0; background:var(--panel); }
-.pupil input{ min-height:30px; padding:2px 8px; width:140px; font-size:.9rem; }
+main { max-width: 980px; margin: 40px auto 0; display: grid; gap: 22px; }
 
-/* Schüler */
-.kid{ max-width:760px; margin:0 auto; padding:14px 14px 40px; min-height:100vh; display:flex; flex-direction:column; gap:14px; }
-.kid .head{ display:flex; justify-content:space-between; align-items:center; gap:10px; color:var(--muted); font-size:.95rem; }
-.kid .big{ font-size:1.7rem; line-height:1.35; }
-.kid .qbox{ background:var(--panel); border:2px solid var(--line); border-radius:22px; padding:20px; }
-.kid .qbox .txt{ font-size:1.5rem; line-height:1.5; margin:0 0 14px; white-space:pre-wrap; }
-.kid .qbox .q{ font-size:1.8rem; font-weight:700; line-height:1.35; margin:0; white-space:pre-wrap; }
-.kid .read{ width:100%; font-size:1.4rem; min-height:68px; border-radius:20px; }
-.kid textarea{ font-size:1.5rem; min-height:150px; border-radius:18px; }
-.kid .bigbtn{ min-height:68px; font-size:1.3rem; border-radius:20px; }
-.rec{ display:flex; flex-direction:column; gap:10px; }
-.rec.on .bigbtn{ background:var(--bad); border-color:var(--bad); color:#fff; animation:pulse 1.2s infinite; }
-@keyframes pulse{ 50%{ opacity:.7; } }
-.kid audio{ width:100%; }
-.center{ text-align:center; margin:auto; }
-.status{ position:fixed; right:10px; bottom:10px; background:var(--panel); border:1px solid var(--line); border-radius:99px; padding:4px 12px; font-size:.85rem; display:flex; gap:8px; align-items:center; }
-.dots{ display:flex; gap:8px; justify-content:center; }
-.dots i{ width:14px; height:14px; border-radius:50%; background:var(--line); display:block; }
-.dots i.cur{ background:var(--accent); } .dots i.done{ background:var(--ok); }
+/* ---------- Knöpfe ---------- */
+.mittelknopf {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  border: 3px solid var(--holz); background: var(--tresen); border-radius: 14px; padding: 8px 16px;
+  font-weight: 700; font-size: 17px; min-height: 48px; box-shadow: 0 3px 0 var(--holz);
+}
+.mittelknopf.primaer { background: var(--senf); color: var(--auf-senf); }
+.mittelknopf.warnung { border-color: var(--bad); color: var(--bad); box-shadow: 0 3px 0 var(--bad); }
+.mittelknopf.klein { min-height: 40px; padding: 4px 12px; font-size: 16px; border-radius: 12px; }
+.mittelknopf:disabled { opacity: .4; box-shadow: none; }
+.grossknopf {
+  display: flex; align-items: center; justify-content: center; gap: 14px; width: 100%;
+  min-height: 76px; padding: 12px 24px; border-radius: 20px; border: 4px solid var(--holz);
+  background: var(--senf); color: var(--auf-senf); font-family: var(--anzeige); font-weight: 900; font-size: 26px;
+  box-shadow: 0 6px 0 var(--holz); text-align: center;
+}
+.grossknopf svg.ic { width: 38px; height: 38px; }
+.grossknopf:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--holz); }
+.grossknopf.weiter { background: var(--gut); color: #fff; border-color: var(--gut); box-shadow: 0 6px 0 var(--gut-dunkel); }
+.grossknopf.weiter:active { box-shadow: 0 2px 0 var(--gut-dunkel); }
+.grossknopf.leise { background: var(--tresen); color: var(--holz); font-size: 21px; min-height: 64px; }
+.grossknopf.aufnahme { background: var(--bad); border-color: var(--bad); color: #fff; box-shadow: 0 6px 0 #7d2218; animation: puls 1.2s infinite; }
+.grossknopf:disabled { opacity: .5; box-shadow: none; transform: none; }
+@keyframes puls { 50% { opacity: .75; } }
+.knopfreihe { display: flex; gap: 14px; flex-wrap: wrap; }
+.knopfreihe > * { flex: 1 1 220px; }
+.reihe { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.reihe .platz { flex: 1; }
+
+/* ---------- Felder ---------- */
+input, select, textarea {
+  font: inherit; font-weight: 400; background: var(--tresen); color: var(--holz); border: 3px solid var(--holz-hell); border-radius: 12px; padding: 10px 12px; max-width: 100%;
+}
+input, select { min-height: 48px; }
+textarea { width: 100%; resize: vertical; min-height: 96px; line-height: 1.4; }
+label.feld { display: grid; gap: 4px; font-size: 16px; color: var(--holz-hell); font-weight: 700; }
+.schalter { display: flex; align-items: center; gap: 12px; min-height: 48px; }
+.schalter input { width: 28px; height: 28px; min-height: 0; accent-color: var(--markise); }
+.seg { display: inline-flex; border: 3px solid var(--holz); border-radius: 14px; overflow: hidden; background: var(--tresen); }
+.seg button { border: 0; background: transparent; padding: 8px 16px; font-weight: 700; min-height: 46px; }
+.seg button.an { background: var(--senf); color: var(--auf-senf); }
+
+/* ---------- Karten ---------- */
+.tresen { background: var(--tresen); border: 4px solid var(--holz); border-radius: 22px; padding: 18px; display: grid; gap: 14px; box-shadow: 0 6px 0 var(--holz); }
+.schritt { background: var(--tresen); border: 3px solid var(--linie); border-radius: 20px; padding: 16px; display: grid; gap: 12px; }
+.abschnitt-kopf { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.abschnitt-kopf h2 { font-size: 24px; flex: 1; min-width: 0; }
+.nr {
+  flex: none; width: 40px; height: 40px; border-radius: 50%; background: var(--senf); color: var(--auf-senf);
+  display: grid; place-items: center; font-family: var(--anzeige); font-weight: 900; font-size: 21px;
+}
+.marke { display: inline-block; padding: 1px 10px; border-radius: 99px; background: var(--flaeche); font-size: 15px; font-weight: 700; white-space: nowrap; }
+.marke.gut { background: var(--gut-hell); color: var(--gut); }
+.dot { display: inline-block; flex: none; width: 12px; height: 12px; border-radius: 50%; background: var(--holz-hell); }
+.dot.ok { background: var(--gut); } .dot.warn { background: var(--orange); } .dot.bad { background: var(--bad); }
+.leer { color: var(--holz-hell); margin: 0; }
+.balken { height: 12px; background: var(--flaeche); border-radius: 99px; overflow: hidden; }
+.balken > i { display: block; height: 100%; background: var(--gut); width: 0; transition: width .3s; }
+
+/* ---------- Reiter (Lehrer) ---------- */
+.reiter { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.reiter button {
+  display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 60px; padding: 6px 10px;
+  border: 3px solid var(--holz); border-radius: 16px; background: var(--tresen); font-family: var(--anzeige); font-weight: 900; font-size: 20px; box-shadow: 0 4px 0 var(--holz);
+}
+.reiter button .nr { width: 32px; height: 32px; font-size: 17px; background: var(--flaeche); }
+.reiter button.an { background: var(--senf); color: var(--auf-senf); }
+.reiter button.an .nr { background: var(--holz); color: #fff; }
+.reiter button:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--holz); }
+@media (max-width: 560px) { .reiter button { font-size: 16px; flex-direction: column; gap: 2px; min-height: 66px; } }
+
+/* ---------- Aufgabenliste (Lehrer) ---------- */
+.liste { display: grid; gap: 10px; }
+.zeile { background: var(--tresen); border: 3px solid var(--linie); border-radius: 18px; overflow: hidden; }
+.zeile.offen { border-color: var(--holz); }
+.zeile > .kopfzeile { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; background: none; border: 0; text-align: left; min-height: 66px; }
+.zeile .vorschau { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
+.zeile .vorschau.leer { font-weight: 400; }
+.zeile .dreh { transition: transform .15s; }
+.zeile.offen .dreh { transform: rotate(180deg); }
+.zeile .inhalt { padding: 4px 14px 16px; display: grid; gap: 12px; border-top: 3px solid var(--linie); padding-top: 14px; }
+.stimme { display: grid; gap: 8px; padding: 12px; border-radius: 14px; background: var(--flaeche); }
+.stimme audio { width: 100%; max-width: 420px; height: 40px; }
+
+/* ---------- Durchführen (Lehrer) ---------- */
+.nummern { display: flex; gap: 8px; flex-wrap: wrap; }
+.nummern button {
+  width: 52px; height: 52px; border-radius: 50%; border: 3px solid var(--holz-hell); background: var(--tresen);
+  font-family: var(--anzeige); font-weight: 900; font-size: 20px; position: relative; padding: 0;
+}
+.nummern button.zeigt { border-color: var(--holz); background: var(--senf); color: var(--auf-senf); box-shadow: 0 3px 0 var(--holz); }
+.nummern button.frei { border-color: var(--gut); }
+.nummern button.frei::after { content: ""; position: absolute; right: -2px; top: -2px; width: 14px; height: 14px; border-radius: 50%; background: var(--gut); border: 2px solid var(--tresen); }
+.aufgabe-ansicht { display: grid; gap: 6px; }
+.aufgabe-ansicht .t { margin: 0; white-space: pre-wrap; }
+.aufgabe-ansicht .q { margin: 0; font-family: var(--anzeige); font-weight: 700; font-size: 24px; line-height: 1.3; white-space: pre-wrap; }
+.status-zeile { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-weight: 700; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 2px 12px 2px 8px; border-radius: 99px; background: var(--flaeche); font-size: 16px; }
+.chip i { width: 12px; height: 12px; border-radius: 50%; display: block; }
+
+.antwort { border: 3px solid var(--linie); border-radius: 16px; padding: 12px 14px; display: grid; gap: 6px; background: var(--tresen); }
+.antwort .wer { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-weight: 700; }
+.antwort .wer i { width: 14px; height: 14px; border-radius: 50%; display: block; }
+.antwort .zeit { font-weight: 400; color: var(--holz-hell); font-size: 15px; }
+.antwort .text { white-space: pre-wrap; font-size: 21px; margin: 0; }
+.antwort audio { width: 100%; max-width: 440px; height: 40px; }
+.antwort.neu { animation: huepfen .6s ease-out; }
+@keyframes huepfen { 0% { transform: scale(.96); background: var(--hm-hell); } 100% { transform: scale(1); } }
+
+/* ---------- Dialoge ---------- */
+dialog { border: 4px solid var(--holz); border-radius: 22px; background: var(--tresen); color: var(--holz); width: min(640px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); padding: 0; }
+dialog::backdrop { background: rgba(10, 20, 35, .55); }
+.dialog-kopf { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 12px; background: var(--tresen); border-bottom: 3px solid var(--linie); padding: 12px 16px; }
+.dialog-kopf h2 { flex: 1; font-size: 24px; }
+.dialog-inhalt { padding: 16px; display: grid; gap: 16px; }
+.qr-gross { display: grid; justify-items: center; gap: 12px; text-align: center; }
+.qr-gross canvas { width: min(300px, 70vw); height: auto; aspect-ratio: 1; border: 3px solid var(--holz); border-radius: 12px; image-rendering: pixelated; }
+.code-gross { font-family: var(--anzeige); font-weight: 900; font-size: clamp(48px, 14vw, 84px); letter-spacing: .14em; line-height: 1; padding-left: .14em; }
+.kind-zeile { display: flex; align-items: center; gap: 10px; }
+.kind-zeile .n { flex: 1; min-width: 0; font-weight: 700; }
+.kind-zeile input { width: 180px; }
+@media (max-width: 520px) { .kind-zeile { flex-wrap: wrap; } .kind-zeile input { width: 100%; } }
+
+/* ---------- Startseite ---------- */
+.kacheln { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; }
+.kachel { display: grid; gap: 8px; text-decoration: none; color: inherit; background: var(--tresen); border: 4px solid var(--holz); border-radius: 22px; padding: 20px; box-shadow: 0 6px 0 var(--holz); }
+.kachel:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--holz); }
+.kachel .bild { width: 64px; height: 64px; border-radius: 50%; background: var(--senf); color: var(--auf-senf); display: grid; place-items: center; }
+.kachel .bild svg.ic { width: 34px; height: 34px; }
+.kachel h2 { font-size: 26px; }
+
+/* ---------- Schüler ---------- */
+.kind { max-width: 780px; margin: 40px auto 0; display: grid; gap: 20px; }
+.kind .kopf { padding-top: 8px; padding-bottom: 8px; }
+.name-schild { background: #fff; color: var(--holz); border: 3px solid var(--holz); border-radius: 8px; padding: 2px 14px; font-weight: 700; font-size: 17px; box-shadow: 2px 3px 0 rgba(0,0,0,.2); }
+.fortschritt { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: space-between; font-size: 18px; }
+.punkte { display: flex; gap: 6px; flex-wrap: wrap; }
+.punkt { width: 20px; height: 20px; border-radius: 50%; border: 3px solid var(--holz-hell); background: var(--tresen); }
+.punkt.jetzt { border-color: var(--holz); background: var(--senf); }
+.punkt.fertig { border-color: var(--gut); background: var(--gut); }
+.aufgabe-karte .t { margin: 0; font-size: 24px; line-height: 1.5; white-space: pre-wrap; }
+.aufgabe-karte .q { margin: 0; font-family: var(--anzeige); font-weight: 800; font-size: clamp(26px, 5vw, 34px); line-height: 1.3; white-space: pre-wrap; text-wrap: balance; }
+.kind textarea { font-size: 24px; min-height: 160px; border-radius: 16px; border-color: var(--holz); }
+.aufnahme-box { display: grid; gap: 10px; }
+.aufnahme-box audio { width: 100%; }
+.meldung { border-radius: 18px; padding: 14px 16px; display: flex; gap: 12px; align-items: center; font-weight: 700; font-size: 20px; }
+.meldung.gut { background: var(--gut-hell); border: 3px solid var(--gut); }
+.meldung.warte { background: var(--hm-hell); border: 3px solid var(--hm); }
+.meldung svg.ic { width: 34px; height: 34px; flex: none; }
+.warten { text-align: center; display: grid; gap: 14px; justify-items: center; padding: 40px 10px; }
+.warten .bild { width: 110px; height: 110px; border-radius: 50%; background: var(--senf); color: var(--auf-senf); display: grid; place-items: center; }
+.warten .bild svg.ic { width: 56px; height: 56px; }
+.warten h2 { font-size: clamp(30px, 6vw, 42px); }
+.namensschild { display: inline-block; background: #fff; color: var(--holz); border: 4px solid var(--holz); border-radius: 10px; padding: 8px 24px; font-family: var(--anzeige); font-weight: 900; font-size: clamp(26px, 6vw, 38px); box-shadow: 3px 4px 0 rgba(0,0,0,.2); }
+.status {
+  position: fixed; right: max(10px, env(safe-area-inset-right, 0px)); bottom: max(10px, env(safe-area-inset-bottom, 0px));
+  background: var(--tresen); border: 2px solid var(--linie); border-radius: 99px; padding: 2px 12px; font-size: 14px; display: flex; gap: 8px; align-items: center; color: var(--holz-hell);
+}
+
+@media (max-width: 520px) { body { font-size: 18px; } .grossknopf { font-size: 22px; min-height: 70px; } }
+@media (prefers-reduced-motion: reduce) { .antwort.neu, .grossknopf.aufnahme { animation: none; } }

@@ -2,78 +2,97 @@
 <html lang="de">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Antwort-Runde · Lehrer-Gerät</title>
-<link rel="stylesheet" href="css/style.css?v=2">
+<link rel="stylesheet" href="css/style.css?v=4">
 </head>
 <body>
-<div class="wrap">
-  <div class="card top">
-    <div class="qrbox" id="qr"></div>
-    <div class="grow">
-      <div class="muted small">Schüler-iPads: QR-Code scannen oder <b>schueler.html</b> öffnen und Code eingeben</div>
-      <div class="code" id="code">····</div>
-      <div class="row small muted"><span class="dot warn" id="netDot"></span><span id="netTxt">verbinde …</span><span id="link" class="small"></span></div>
-    </div>
-    <div class="row" style="flex-direction:column;align-items:stretch">
-      <button class="btn small" id="bFull">Code groß zeigen</button>
-      <button class="btn small danger" id="bNew">Neue Runde</button>
-    </div>
-  </div>
+<header class="markise"><div class="kopf">
+  <h1 class="schild-titel">Antwort-Runde</h1>
+  <span class="platz"></span>
+  <button class="mittelknopf" id="bKinder"><span class="dot" id="netDot"></span><span id="pillTxt">verbinde …</span></button>
+  <button class="mittelknopf primaer" id="bCode"><span data-ic="qr"></span>Code <b id="codeTxt">····</b></button>
+  <button class="rundknopf" id="bSet" aria-label="Einstellungen"><span data-ic="sliders"></span></button>
+</div></header>
 
-  <div class="card">
-    <b>Kinder (<span id="nOn">0</span> online, <span id="nAll">0</span> insgesamt)</b>
-    <div id="pupils" style="margin-top:10px" class="small muted">Noch niemand verbunden.</div>
-    <div class="small muted">Echte Namen kannst du hier eintragen. Sie bleiben nur auf diesem Gerät.</div>
-  </div>
+<main>
+  <nav class="reiter" id="reiter">
+    <button data-v="aufgaben" class="an"><span class="nr">1</span>Aufgaben</button>
+    <button data-v="live"><span class="nr">2</span>Durchführen</button>
+    <button data-v="aus"><span class="nr">3</span>Antworten <span class="marke" id="ansN" hidden></span></button>
+  </nav>
 
-  <div class="card">
-    <div class="row">
-      <span><b>Tempo</b></span>
+  <!-- 1 Aufgaben -->
+  <section id="vAufgaben" class="liste">
+    <div class="abschnitt-kopf">
+      <h2>Aufgaben vorbereiten</h2>
+      <button class="mittelknopf" id="bBulk"><span data-ic="list"></span>Mehrere einfügen</button>
+      <button class="mittelknopf primaer" id="bAdd"><span data-ic="plus"></span>Aufgabe</button>
+    </div>
+    <p class="muted klein" style="margin:0">Tippe auf eine Aufgabe, um sie zu bearbeiten. Text, Frage und eigene Stimme sind jeweils optional.</p>
+    <div class="liste" id="tasks"></div>
+    <button class="grossknopf weiter" id="bToLive">Weiter: Durchführen<span data-ic="right"></span></button>
+  </section>
+
+  <!-- 2 Durchführen -->
+  <section id="vLive" hidden class="liste">
+    <div class="tresen" id="steuer"></div>
+    <div class="schritt" id="liveAns"></div>
+  </section>
+
+  <!-- 3 Antworten -->
+  <section id="vAus" hidden class="liste">
+    <div class="abschnitt-kopf">
+      <h2>Alle Antworten</h2>
+      <button class="mittelknopf" id="bExpTxt"><span data-ic="download"></span>Text</button>
+      <button class="mittelknopf" id="bExpCsv"><span data-ic="download"></span>Tabelle (CSV)</button>
+    </div>
+    <div class="liste" id="ausList"></div>
+  </section>
+</main>
+
+<dialog id="dCode"><div class="dialog-kopf"><h2>Kinder einladen</h2><button class="rundknopf" data-close aria-label="Schließen"><span data-ic="close"></span></button></div>
+  <div class="dialog-inhalt qr-gross">
+    <div id="qr"></div>
+    <div class="code-gross" id="codeBig"></div>
+    <div class="muted">QR-Code mit der Kamera scannen oder <b>schueler.html</b> öffnen und den Code eingeben.</div>
+    <div class="klein muted" id="linkTxt"></div>
+  </div>
+</dialog>
+
+<dialog id="dKinder"><div class="dialog-kopf"><h2>Kinder</h2><button class="rundknopf" data-close aria-label="Schließen"><span data-ic="close"></span></button></div>
+  <div class="dialog-inhalt">
+    <p class="muted klein" style="margin:0">Hier kannst du echte Namen eintragen. Sie bleiben nur auf diesem Gerät.</p>
+    <div class="liste" id="pupils"></div>
+  </div>
+</dialog>
+
+<dialog id="dSet"><div class="dialog-kopf"><h2>Einstellungen</h2><button class="rundknopf" data-close aria-label="Schließen"><span data-ic="close"></span></button></div>
+  <div class="dialog-inhalt">
+    <div class="feld"><label class="feld">Tempo</label>
       <div class="seg" id="pace"><button data-v="live">Gemeinsam</button><button data-v="self">Eigenes Tempo</button></div>
-      <span class="grow"></span>
-      <label class="row small"><input type="checkbox" id="autoRead"> automatisch vorlesen</label>
-      <label class="row small">Sprechtempo
-        <select id="rate"><option value="0.7">langsam</option><option value="0.9">normal</option><option value="1.05">zügig</option></select>
-      </label>
-    </div>
-    <div class="row" style="margin-top:12px" id="ctl">
-      <button class="btn" id="bPrev">◀</button>
-      <div class="grow" id="curTxt" style="text-align:center;font-weight:700"></div>
-      <button class="btn primary" id="bNext">Aufgabe 1 freigeben ▶</button>
-      <button class="btn danger" id="bStop">Pause</button>
-    </div>
-    <div class="small muted" style="margin-top:6px" id="paceHelp"></div>
+      <div class="muted klein" id="paceHelp"></div></div>
+    <label class="schalter"><input type="checkbox" id="autoRead"> Aufgabe automatisch vorlesen</label>
+    <label class="feld">Sprechtempo der iPad-Stimme
+      <select id="rate"><option value="0.7">langsam</option><option value="0.9">normal</option><option value="1.05">zügig</option></select></label>
+    <hr style="border:0;border-top:3px solid var(--linie);width:100%">
+    <button class="mittelknopf warnung" id="bNew"><span data-ic="trash"></span>Neue Runde (löscht alle Antworten)</button>
+    <div class="muted klein">Antwort-Runde <span id="ver"></span></div>
   </div>
+</dialog>
 
-  <div class="tabs">
-    <div class="seg" id="tabs"><button data-v="tasks" class="on">Aufgaben</button><button data-v="ans">Antworten <span id="ansN"></span></button></div>
-    <span class="grow"></span>
-    <button class="btn small" id="bExpTxt">Antworten als Text</button>
-    <button class="btn small" id="bExpCsv">Als Tabelle (CSV)</button>
+<dialog id="dBulk"><div class="dialog-kopf"><h2>Mehrere Aufgaben einfügen</h2><button class="rundknopf" data-close aria-label="Schließen"><span data-ic="close"></span></button></div>
+  <div class="dialog-inhalt">
+    <p class="muted klein" style="margin:0">Eine Aufgabe pro Absatz (Leerzeile dazwischen). Bei mehreren Zeilen gilt die letzte Zeile als Frage, die Zeilen davor als Lesetext.</p>
+    <textarea id="bulkTxt" rows="8"></textarea>
+    <button class="grossknopf weiter" id="bBulkOk">Übernehmen</button>
   </div>
-
-  <div id="tasksView">
-    <div id="tasks"></div>
-    <div class="row">
-      <button class="btn" id="bAdd">+ Aufgabe</button>
-      <button class="btn" id="bBulk">Mehrere einfügen …</button>
-    </div>
-    <div class="card hidden" id="bulkBox" style="margin-top:12px">
-      <div class="small muted">Eine Aufgabe pro Absatz (Leerzeile dazwischen). Bei mehreren Zeilen gilt die letzte Zeile als Frage, die Zeilen davor als Lesetext.</div>
-      <textarea id="bulkTxt" style="margin:8px 0"></textarea>
-      <button class="btn primary" id="bBulkOk">Übernehmen</button>
-    </div>
-  </div>
-  <div id="ansView" class="hidden"></div>
-</div>
-
-<div id="big" class="hidden" style="position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:9"></div>
+</dialog>
 
 <script src="lib/peerjs.min.js"></script>
 <script src="lib/qrcode.js"></script>
-<script src="js/common.js?v=2"></script>
-<script src="js/net.js?v=2"></script>
-<script src="js/lehrer.js?v=2"></script>
+<script src="js/common.js?v=4"></script>
+<script src="js/net.js?v=4"></script>
+<script src="js/lehrer.js?v=4"></script>
 </body>
 </html>

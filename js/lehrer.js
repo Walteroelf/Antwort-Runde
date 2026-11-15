@@ -1,20 +1,25 @@
 'use strict';
-/* Antwort-Runde: Lehrer-Gerät. Hält den Raum, verteilt Aufgaben, sammelt Antworten. */
+/* Antwort-Runde: Lehrer-Gerät. Hält den Raum, verteilt Aufgaben, sammelt Antworten.
+   Drei Reiter: 1 Aufgaben vorbereiten, 2 Durchführen (live), 3 Antworten (Auswertung). */
 (function () {
   const $ = id => document.getElementById(id);
   const KEY = 'ar.teacher.' + (AR.NET === 'bc' ? 'bc' : 'p');
   const defaults = () => ({ room: AR.genCode(4), round: AR.rid(6), tasks: [], current: -1, pace: 'live', rate: 0.9, autoRead: true, names: {}, pupils: {}, answers: {} });
   let S = Object.assign(defaults(), AR.store.get(KEY, {}));
   if (!S.tasks.length) S.tasks.push(newTask());
+
   const conns = new Map();     // conn -> pid
   const online = new Set();    // pid
   const audio = new Map();     // 'task|pid' -> {blob}
+  const urls = new Map();      // 'task|pid' -> Objekt-URL (damit Player nicht neu laden)
   const voices = new Map();    // taskId -> {blob, ts}: Vorlese-Aufnahmen der Lehrkraft
   let vrec = null;             // laufende Aufnahme {task, recorder, stream, chunks, timer}
-  let host = null, takenTries = 0, tab = 'tasks';
+  let host = null, takenTries = 0;
+  let view = 'aufgaben', openTask = null, vi = Math.max(0, S.current), openAns = new Set(), fresh = null, pendingDraw = false;
 
   function newTask() { return { id: AR.rid(6), text: '', q: '', mode: 'text', voice: 0 }; }
   function save() { AR.store.set(KEY, S); }
+  const MODES = { text: 'Text', both: 'Text oder Aufnahme', audio: 'Aufnahme' };
 
   /* ---------- Audio-Ablage (IndexedDB, mit Notlösung im Speicher) ---------- */
   const idb = {
@@ -30,6 +35,7 @@
       });
     },
     put(k, v) { try { if (this.db) this.db.transaction('a', 'readwrite').objectStore('a').put(v, k); } catch (e) { /* egal */ } },
+    del(k) { try { if (this.db) this.db.transaction('a', 'readwrite').objectStore('a').delete(k); } catch (e) { /* egal */ } },
     all() {
       return new Promise(res => {
         if (!this.db) return res([]);
@@ -40,7 +46,6 @@
         } catch (e) { res([]); }
       });
     },
-    del(k) { try { if (this.db) this.db.transaction('a', 'readwrite').objectStore('a').delete(k); } catch (e) { /* egal */ } },
     // Antwort-Aufnahmen löschen, Vorlese-Aufnahmen ('v|…') bleiben
     clear() {
       try {
@@ -56,16 +61,17 @@
     const p = S.pupils[pid] || {}; const n = (S.names[pid] || '').trim();
     return n ? n + ' (' + (p.name || pid) + ')' : (p.name || pid);
   }
-  function stateMsg() {
-    return { t: 'state', round: S.round, tasks: S.tasks, current: S.current, pace: S.pace, rate: S.rate, autoRead: S.autoRead };
-  }
+  const byLabel = (a, b) => label(a).localeCompare(label(b), 'de');
+  function stateMsg() { return { t: 'state', round: S.round, tasks: S.tasks, current: S.current, pace: S.pace, rate: S.rate, autoRead: S.autoRead }; }
   function broadcast() { conns.forEach((pid, c) => c.send(stateMsg())); }
   let pushTimer = null;
   function pushSoon() { clearTimeout(pushTimer); pushTimer = setTimeout(broadcast, 350); }
-  function studentUrl() {
-    const u = new URL('schueler.html', location.href);
-    return u.origin + u.pathname + AR.netQuery + '#r=' + S.room;
-  }
+  function studentUrl() { const u = new URL('schueler.html', location.href); return u.origin + u.pathname + AR.netQuery + '#r=' + S.room; }
+  function preview(t) { const s = (t.q || t.text || '').replace(/\s+/g, ' ').trim(); return s || ''; }
+  function nAnswers(id) { return Object.keys(S.answers[id] || {}).length; }
+  function total() { return S.tasks.reduce((n, t) => n + nAnswers(t.id), 0); }
+  function el(tag, cls, html) { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
+  function audioUrl(key) { if (!urls.has(key)) urls.set(key, URL.createObjectURL(audio.get(key).blob)); return urls.get(key); }
 
   /* ---------- Verbindung ---------- */
   function startHost() {
@@ -74,158 +80,174 @@
       onStatus(s) {
         const ok = s === 'open';
         $('netDot').className = 'dot ' + (ok ? 'ok' : s === 'connecting' ? 'warn' : 'bad');
-        $('netTxt').textContent = ok ? 'bereit' : s === 'connecting' ? 'verbinde …' : 'Verbindungsproblem (' + s.replace('error:', '') + ')';
+        netState = ok ? 'ok' : s === 'connecting' ? 'verbinde …' : 'Verbindungsproblem';
+        drawHead();
       },
       onOpen() { takenTries = 0; },
       onTaken() {
-        // Alter Eintrag auf dem Vermittlungsserver lebt noch kurz: erneut versuchen, sonst neuer Code
-        $('netTxt').textContent = 'Code noch belegt, versuche erneut …';
-        if (++takenTries > 6) { takenTries = 0; S.room = AR.genCode(4); save(); drawHeader(); }
+        netState = 'Code noch belegt …'; drawHead();
+        if (++takenTries > 6) { takenTries = 0; S.room = AR.genCode(4); save(); drawHead(); }
         setTimeout(startHost, 4000);
       },
       onConn(c) {
         c.on('data', d => onData(c, d));
-        c.on('close', () => { const pid = conns.get(c); conns.delete(c); if (pid && ![...conns.values()].includes(pid)) online.delete(pid); drawPupils(); });
+        c.on('close', () => { const pid = conns.get(c); conns.delete(c); if (pid && ![...conns.values()].includes(pid)) online.delete(pid); drawHead(); drawKinder(); drawLive(); });
       }
     });
   }
+  let netState = 'verbinde …';
 
   function onData(c, d) {
     if (!d || !d.t) return;
     if (d.t === 'hello' && d.pid) {
       conns.set(c, d.pid); online.add(d.pid);
       S.pupils[d.pid] = { name: String(d.name || d.pid).slice(0, 40), last: Date.now() };
-      save(); c.send(stateMsg()); drawPupils(); drawAnswers();
+      save(); c.send(stateMsg()); drawHead(); drawKinder(); drawLive(); drawAus();
     } else if (d.t === 'needaudio' && d.task) {
       const v = voices.get(d.task);
       if (v) v.blob.arrayBuffer().then(buf => c.send({ t: 'taskaudio', task: d.task, ts: v.ts, audio: buf, mime: v.blob.type || 'audio/mp4' }));
     } else if (d.t === 'answer' && d.pid && d.task) {
-      if (d.round !== S.round) { c.send({ t: 'ack', task: d.task, ts: d.ts }); return; }
-      if (!S.tasks.some(t => t.id === d.task)) { c.send({ t: 'ack', task: d.task, ts: d.ts }); return; }
+      const ack = () => c.send({ t: 'ack', task: d.task, ts: d.ts });
+      if (d.round !== S.round || !S.tasks.some(t => t.id === d.task)) { ack(); return; }
       const pid = d.pid;
       if (!S.pupils[pid]) S.pupils[pid] = { name: String(d.name || pid).slice(0, 40) };
       S.pupils[pid].last = Date.now();
       const key = d.task + '|' + pid;
       const prev = (S.answers[d.task] || {})[pid];
-      if (prev && prev.ts > d.ts) { c.send({ t: 'ack', task: d.task, ts: d.ts }); return; }
+      if (prev && prev.ts > d.ts) { ack(); return; }
       let hasAudio = false;
       if (d.audio && (d.audio.byteLength || d.audio.size)) {
         const blob = new Blob([d.audio], { type: d.mime || 'audio/mp4' });
+        if (urls.has(key)) { URL.revokeObjectURL(urls.get(key)); urls.delete(key); }
         audio.set(key, { blob }); idb.put(S.round + '|' + key, { blob }); hasAudio = true;
       } else if (prev && prev.audio && !d.dropAudio) hasAudio = true;
       (S.answers[d.task] = S.answers[d.task] || {})[pid] = { text: String(d.text || '').slice(0, 5000), audio: hasAudio, mime: d.mime || '', ts: d.ts || Date.now() };
-      save(); c.send({ t: 'ack', task: d.task, ts: d.ts }); drawPupils(); drawAnswers();
+      save(); ack(); fresh = key; drawHead(); drawKinder(); drawLive(); drawAus();
     }
   }
 
-  /* ---------- Anzeige: Kopf ---------- */
-  function drawHeader() {
-    $('code').textContent = S.room;
+  /* ---------- Kopf, Dialoge ---------- */
+  function drawHead() {
+    $('pillTxt').textContent = netState === 'ok' ? online.size + ' online' : netState;
+    $('codeTxt').textContent = S.room;
+    const n = total(); $('ansN').hidden = !n; $('ansN').textContent = n;
+  }
+  function drawCode() {
+    $('codeBig').textContent = S.room;
     $('qr').innerHTML = ''; const q = AR.makeQR(studentUrl()); if (q) $('qr').appendChild(q);
-    $('link').textContent = AR.NET === 'bc' ? '· Testbetrieb (?net=bc)' : '';
+    $('linkTxt').textContent = AR.NET === 'bc' ? 'Testbetrieb (?net=bc)' : '';
   }
-  function drawBig() {
-    const b = $('big');
-    b.classList.remove('hidden'); b.innerHTML = '';
-    const q = AR.makeQR(studentUrl()); q.style.cssText = 'width:min(60vh,80vw);height:min(60vh,80vw);border-radius:16px';
-    const c = document.createElement('div'); c.className = 'code'; c.style.fontSize = '5rem'; c.textContent = S.room;
-    const m = document.createElement('div'); m.className = 'muted'; m.textContent = 'Antippen zum Schließen';
-    b.append(q, c, m); b.onclick = () => b.classList.add('hidden');
-  }
-  function drawPupils() {
-    const ids = Object.keys(S.pupils);
-    $('nAll').textContent = ids.length; $('nOn').textContent = online.size;
-    const box = $('pupils');
-    if (!ids.length) { box.textContent = 'Noch niemand verbunden.'; return; }
-    if (box.contains(document.activeElement) && document.activeElement.tagName === 'INPUT') { updateDots(); return; }
-    box.className = ''; box.innerHTML = '';
-    ids.sort((a, b) => label(a).localeCompare(label(b), 'de')).forEach(pid => {
-      const el = document.createElement('span'); el.className = 'pupil'; el.dataset.pid = pid;
-      el.innerHTML = '<span class="dot ' + (online.has(pid) ? 'ok' : '') + '"></span><span>' + AR.esc(S.pupils[pid].name) + '</span>';
-      const inp = document.createElement('input'); inp.placeholder = 'Name'; inp.value = S.names[pid] || '';
-      inp.onchange = () => { S.names[pid] = inp.value; save(); drawAnswers(); };
-      el.appendChild(inp); box.appendChild(el);
+  function drawKinder() {
+    const box = $('pupils'), ids = Object.keys(S.pupils);
+    if (!$('dKinder').open) return;
+    if (box.contains(document.activeElement) && document.activeElement.tagName === 'INPUT') {
+      box.querySelectorAll('.kind-zeile').forEach(r => { r.firstChild.className = 'dot ' + (online.has(r.dataset.pid) ? 'ok' : ''); }); return;
+    }
+    box.innerHTML = '';
+    if (!ids.length) { box.appendChild(el('p', 'leer', 'Noch niemand verbunden.')); return; }
+    ids.sort(byLabel).forEach(pid => {
+      const r = el('div', 'kind-zeile'); r.dataset.pid = pid;
+      r.innerHTML = '<span class="dot ' + (online.has(pid) ? 'ok' : '') + '"></span><span class="n">' + AR.esc(S.pupils[pid].name) + '</span>';
+      const inp = el('input'); inp.placeholder = 'Echter Name'; inp.value = S.names[pid] || '';
+      inp.onchange = () => { S.names[pid] = inp.value; save(); drawLive(); drawAus(); };
+      r.appendChild(inp); box.appendChild(r);
     });
   }
-  function updateDots() { document.querySelectorAll('#pupils .pupil').forEach(el => { el.firstChild.className = 'dot ' + (online.has(el.dataset.pid) ? 'ok' : ''); }); }
-
-  /* ---------- Steuerung ---------- */
-  function drawControl() {
-    document.querySelectorAll('#pace button').forEach(b => b.classList.toggle('on', b.dataset.v === S.pace));
+  function drawSettings() {
+    document.querySelectorAll('#pace button').forEach(b => b.classList.toggle('an', b.dataset.v === S.pace));
     $('autoRead').checked = !!S.autoRead; $('rate').value = String(S.rate);
-    const n = S.tasks.length, c = S.current, self = S.pace === 'self';
-    $('curTxt').textContent = c < 0 ? 'Kinder warten' : self ? 'Alle Aufgaben freigegeben' : 'Aufgabe ' + (c + 1) + ' von ' + n;
-    $('bPrev').classList.toggle('hidden', self || c < 1);
-    $('bNext').classList.toggle('hidden', self ? c >= 0 : c >= n - 1);
-    $('bNext').textContent = self ? 'Alle freigeben ▶' : c < 0 ? 'Aufgabe 1 freigeben ▶' : 'Nächste Aufgabe ▶';
-    $('bStop').classList.toggle('hidden', c < 0);
-    $('paceHelp').textContent = self ? 'Eigenes Tempo: Die Kinder blättern selbst durch alle Aufgaben.' : 'Gemeinsam: Alle Kinder sehen immer die Aufgabe, die du freigibst.';
-    document.querySelectorAll('.task').forEach((el, i) => el.classList.toggle('live', !self && i === c));
+    $('paceHelp').textContent = S.pace === 'self' ? 'Die Kinder blättern selbst durch alle Aufgaben.' : 'Alle Kinder sehen immer die Aufgabe, die du freigibst.';
   }
-  function setCurrent(i) { S.current = i; save(); broadcast(); drawControl(); }
 
-  /* ---------- Aufgaben-Editor ---------- */
+  /* ---------- Reiter ---------- */
+  function showView(v) {
+    view = v;
+    document.querySelectorAll('#reiter button').forEach(b => b.classList.toggle('an', b.dataset.v === v));
+    $('vAufgaben').hidden = v !== 'aufgaben'; $('vLive').hidden = v !== 'live'; $('vAus').hidden = v !== 'aus';
+    if (v === 'aufgaben') drawTasks(); if (v === 'live') drawLive(); if (v === 'aus') drawAus();
+  }
+
+  /* ---------- 1 Aufgaben ---------- */
   function drawTasks() {
+    if (view !== 'aufgaben') return;
     const box = $('tasks'); box.innerHTML = '';
     S.tasks.forEach((t, i) => {
-      const el = document.createElement('div'); el.className = 'task';
-      el.innerHTML =
-        '<div class="row"><span class="nr">Aufgabe ' + (i + 1) + '</span><span class="grow"></span>' +
-        '<button class="btn small" data-a="show">Jetzt zeigen</button>' +
-        '<button class="btn small" data-a="up">↑</button><button class="btn small" data-a="down">↓</button>' +
-        '<button class="btn small danger" data-a="del">Löschen</button></div>' +
-        '<label class="small muted">Text zum Vorlesen (optional)</label><textarea data-f="text" rows="3"></textarea>' +
-        '<label class="small muted">Frage (optional)</label><textarea data-f="q" rows="2" style="min-height:60px"></textarea>' +
-        '<div class="row" style="margin-top:8px"><span class="small muted">Antwort per</span><select data-f="mode">' +
-        '<option value="text">Schreiben oder Einsprechen als Text</option>' +
-        '<option value="both">Text oder Sprachaufnahme</option>' +
-        '<option value="audio">nur Sprachaufnahme</option></select></div>' +
-        '<div class="voice" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line)"></div>';
-      drawVoice(el.querySelector('.voice'), t);
-      el.querySelector('[data-f=text]').value = t.text; el.querySelector('[data-f=q]').value = t.q; el.querySelector('[data-f=mode]').value = t.mode;
-      el.oninput = el.onchange = e => { const f = e.target.dataset.f; if (f) { t[f] = e.target.value; save(); pushSoon(); drawAnswersSoon(); } };
-      el.onclick = e => {
-        const a = e.target.dataset && e.target.dataset.a; if (!a) return;
-        if (a === 'show') { S.pace === 'live' ? setCurrent(i) : setCurrent(Math.max(S.current, 0)); }
-        if (a === 'del') {
-          const has = Object.keys(S.answers[t.id] || {}).length;
-          if (has && !confirm('Zu dieser Aufgabe gibt es ' + has + ' Antworten. Wirklich löschen?')) return;
-          if (vrec && vrec.task === t.id) stopVRec(true);
-          voices.delete(t.id); idb.del('v|' + t.id);
-          S.tasks.splice(i, 1); delete S.answers[t.id]; if (!S.tasks.length) S.tasks.push(newTask());
-          if (S.current >= S.tasks.length) S.current = S.tasks.length - 1;
-        }
-        if (a === 'up' && i > 0) [S.tasks[i - 1], S.tasks[i]] = [S.tasks[i], S.tasks[i - 1]];
-        if (a === 'down' && i < S.tasks.length - 1) [S.tasks[i + 1], S.tasks[i]] = [S.tasks[i], S.tasks[i + 1]];
-        save(); broadcast(); drawTasks(); drawControl(); drawAnswers();
-      };
-      box.appendChild(el);
+      const row = el('div', 'zeile' + (openTask === t.id ? ' offen' : ''));
+      const head = el('button', 'kopfzeile');
+      const p = preview(t);
+      head.innerHTML = '<span class="nr">' + (i + 1) + '</span><span class="vorschau' + (p ? '' : ' leer') + '">' + AR.esc(p || 'Noch leer') + '</span>' +
+        (t.voice ? '<span class="marke">' + AR.icon('mic') + ' Stimme</span>' : '') +
+        '<span class="marke">' + MODES[t.mode || 'text'] + '</span><span class="dreh">' + AR.icon('down') + '</span>';
+      head.onclick = () => { openTask = openTask === t.id ? null : t.id; drawTasks(); };
+      row.appendChild(head);
+      if (openTask === t.id) row.appendChild(taskEditor(t, i, head.querySelector('.vorschau')));
+      box.appendChild(row);
     });
-    drawControl();
+  }
+
+  function taskEditor(t, i, prevEl) {
+    const e = el('div', 'inhalt');
+    e.innerHTML =
+      '<label class="feld">Text zum Vorlesen (optional)<textarea data-f="text" rows="3"></textarea></label>' +
+      '<label class="feld">Frage (optional)<textarea data-f="q" rows="2" style="min-height:64px"></textarea></label>' +
+      '<label class="feld">Die Kinder antworten per<select data-f="mode">' +
+      '<option value="text">Schreiben oder Einsprechen (wird Text)</option>' +
+      '<option value="both">Text oder Sprachaufnahme</option>' +
+      '<option value="audio">nur Sprachaufnahme</option></select></label>' +
+      '<div class="stimme"></div>' +
+      '<div class="reihe"><button class="mittelknopf primaer" data-a="show">' + AR.icon('play') + 'Jetzt zeigen</button><span class="platz"></span>' +
+      '<button class="mittelknopf klein" data-a="up" aria-label="Nach oben">' + AR.icon('up') + '</button>' +
+      '<button class="mittelknopf klein" data-a="down" aria-label="Nach unten">' + AR.icon('down') + '</button>' +
+      '<button class="mittelknopf klein warnung" data-a="del">' + AR.icon('trash') + 'Löschen</button></div>';
+    e.querySelector('[data-f=text]').value = t.text; e.querySelector('[data-f=q]').value = t.q; e.querySelector('[data-f=mode]').value = t.mode || 'text';
+    drawVoice(e.querySelector('.stimme'), t);
+    e.oninput = e.onchange = ev => {
+      const f = ev.target.dataset.f; if (!f) return;
+      t[f] = ev.target.value; save(); pushSoon();
+      const p = preview(t); prevEl.textContent = p || 'Noch leer'; prevEl.classList.toggle('leer', !p);
+      if (f === 'mode') { drawTasks(); }
+    };
+    e.onclick = ev => {
+      const b = ev.target.closest('[data-a]'); if (!b) return; const a = b.dataset.a;
+      if (a === 'show') { vi = i; if (S.pace === 'live') setCurrent(i); else setCurrent(Math.max(S.current, 0)); showView('live'); return; }
+      if (a === 'del') {
+        const has = nAnswers(t.id);
+        if (has && !confirm('Zu dieser Aufgabe gibt es ' + has + ' Antworten. Wirklich löschen?')) return;
+        if (vrec && vrec.task === t.id) stopVRec(true);
+        voices.delete(t.id); idb.del('v|' + t.id);
+        S.tasks.splice(i, 1); delete S.answers[t.id]; openTask = null; if (!S.tasks.length) S.tasks.push(newTask());
+        if (S.current >= S.tasks.length) S.current = S.tasks.length - 1;
+        vi = Math.min(vi, S.tasks.length - 1);
+      }
+      if (a === 'up' && i > 0) [S.tasks[i - 1], S.tasks[i]] = [S.tasks[i], S.tasks[i - 1]];
+      if (a === 'down' && i < S.tasks.length - 1) [S.tasks[i + 1], S.tasks[i]] = [S.tasks[i], S.tasks[i + 1]];
+      save(); broadcast(); drawTasks(); drawHead();
+    };
+    return e;
   }
 
   /* ---------- Vorlese-Aufnahme der Lehrkraft ---------- */
   function drawVoice(box, t) {
     box.innerHTML = '';
     const v = voices.get(t.id), now = vrec && vrec.task === t.id;
-    const mk = (txt, cls, fn) => { const b = document.createElement('button'); b.className = 'btn small ' + (cls || ''); b.textContent = txt; b.onclick = fn; return b; };
-    const row = document.createElement('div'); row.className = 'row'; box.appendChild(row);
-    if (!window.MediaRecorder || !navigator.mediaDevices) { row.textContent = 'Aufnehmen geht auf diesem Gerät nicht.'; return; }
+    const mk = (ic, txt, cls, fn) => { const b = el('button', 'mittelknopf ' + (cls || ''), AR.icon(ic) + txt); b.onclick = fn; return b; };
+    box.appendChild(el('b', null, 'Mit eigener Stimme vorlesen'));
+    if (!window.MediaRecorder || !navigator.mediaDevices) { box.appendChild(el('span', 'muted klein', 'Aufnehmen geht auf diesem Gerät nicht.')); return; }
     if (now) {
-      const l = document.createElement('b'); l.style.color = 'var(--bad)'; l.textContent = '● Aufnahme läuft …'; row.appendChild(l);
-      row.appendChild(mk('⏹ Fertig', 'primary', () => stopVRec()));
-      return;
+      const r = el('div', 'reihe'); r.appendChild(el('b', null, '<span class="dot bad"></span> Aufnahme läuft …'));
+      r.appendChild(mk('stop', 'Fertig', 'primaer', () => stopVRec())); box.appendChild(r); return;
     }
     if (t.voice && v) {
-      const au = document.createElement('audio'); au.controls = true; au.src = URL.createObjectURL(v.blob); au.style.height = '38px'; row.appendChild(au);
-      row.appendChild(mk('🎙️ Neu aufnehmen', '', () => startVRec(t)));
-      row.appendChild(mk('Aufnahme löschen', 'danger', () => { t.voice = 0; voices.delete(t.id); idb.del('v|' + t.id); save(); broadcast(); drawTasks(); }));
-      const h = document.createElement('div'); h.className = 'small muted'; h.style.width = '100%'; h.textContent = 'Die Kinder hören deine Aufnahme statt der iPad-Stimme (Text und Frage in einer Aufnahme).'; box.appendChild(h);
+      const au = el('audio'); au.controls = true; au.src = URL.createObjectURL(v.blob); box.appendChild(au);
+      const r = el('div', 'reihe');
+      r.appendChild(mk('rec', 'Neu aufnehmen', '', () => startVRec(t)));
+      r.appendChild(mk('trash', 'Löschen', 'warnung', () => { t.voice = 0; voices.delete(t.id); idb.del('v|' + t.id); save(); broadcast(); drawTasks(); }));
+      box.appendChild(r);
+      box.appendChild(el('span', 'muted klein', 'Die Kinder hören deine Aufnahme statt der iPad-Stimme. Sprich Text und Frage in einer Aufnahme.'));
       return;
     }
-    row.appendChild(mk('🎙️ Mit eigener Stimme einsprechen', '', () => startVRec(t)));
-    const h = document.createElement('span'); h.className = 'small muted';
-    h.textContent = t.voice ? 'Die Aufnahme fehlt auf diesem Gerät. Bitte neu aufnehmen.' : 'Ohne Aufnahme liest die iPad-Stimme vor.'; row.appendChild(h);
+    box.appendChild(mk('rec', 'Aufnahme starten', '', () => startVRec(t)));
+    box.appendChild(el('span', 'muted klein', t.voice ? 'Die Aufnahme fehlt auf diesem Gerät. Bitte neu aufnehmen.' : 'Ohne Aufnahme liest die iPad-Stimme vor.'));
   }
   async function startVRec(t) {
     if (vrec) stopVRec(true);
@@ -249,72 +271,147 @@
   }
   function stopVRec(discard) { if (vrec && vrec.recorder.state === 'recording') { vrec.discard = !!discard; vrec.recorder.stop(); } }
 
-  /* ---------- Antworten ---------- */
-  let ansTimer = null;
-  function drawAnswersSoon() { clearTimeout(ansTimer); ansTimer = setTimeout(drawAnswers, 500); }
-  function total() { return S.tasks.reduce((n, t) => n + Object.keys(S.answers[t.id] || {}).length, 0); }
-  function drawAnswers() {
-    $('ansN').textContent = total() ? '(' + total() + ')' : '';
-    if (tab !== 'ans') return;
-    const box = $('ansView'); box.innerHTML = '';
-    const nPupils = Math.max(1, Object.keys(S.pupils).length);
-    S.tasks.forEach((t, i) => {
-      const list = S.answers[t.id] || {}, ids = Object.keys(list);
-      const card = document.createElement('div'); card.className = 'card';
-      const head = (t.q || t.text || '(leer)').split('\n').slice(-1)[0];
-      card.innerHTML = '<div class="row"><b>Aufgabe ' + (i + 1) + '</b><span class="grow small muted">' + AR.esc(head) + '</span><span class="tag">' + ids.length + ' von ' + nPupils + '</span></div>' +
-        '<div class="bar" style="margin:8px 0"><i style="width:' + Math.round(100 * ids.length / nPupils) + '%"></i></div>';
-      ids.sort((a, b) => label(a).localeCompare(label(b), 'de')).forEach(pid => {
-        const a = list[pid], row = document.createElement('div'); row.className = 'ans';
-        row.innerHTML = '<div class="row"><span class="who">' + AR.esc(label(pid)) + '</span><span class="small muted">' + AR.fmtTime(a.ts) + '</span><span class="grow"></span></div>';
-        if (a.text) {
-          const p = document.createElement('div'); p.className = 'txt'; p.textContent = a.text; row.appendChild(p);
-          if (AR.tts.ok) { const b = document.createElement('button'); b.className = 'btn small'; b.textContent = '🔊 Vorlesen'; b.onclick = () => AR.tts.speak(a.text, S.rate); row.firstChild.appendChild(b); }
-        }
-        if (a.audio) {
-          const rec = audio.get(t.id + '|' + pid);
-          if (rec) {
-            const au = document.createElement('audio'); au.controls = true; au.src = URL.createObjectURL(rec.blob); row.appendChild(au);
-          } else { const m = document.createElement('div'); m.className = 'small muted'; m.textContent = '(Aufnahme nicht mehr auf diesem Gerät)'; row.appendChild(m); }
-        }
-        card.appendChild(row);
-      });
-      if (!ids.length) { const m = document.createElement('div'); m.className = 'small muted'; m.textContent = 'Noch keine Antworten.'; card.appendChild(m); }
-      box.appendChild(card);
+  /* ---------- Antworten anzeigen (gemeinsam für Reiter 2 und 3) ---------- */
+  function anyPlaying() { return [...document.querySelectorAll('#vLive audio, #vAus audio')].some(a => !a.paused && !a.ended); }
+  document.addEventListener('pause', () => { if (pendingDraw && !anyPlaying()) { pendingDraw = false; drawLive(); drawAus(); } }, true);
+  document.addEventListener('ended', () => { if (pendingDraw && !anyPlaying()) { pendingDraw = false; drawLive(); drawAus(); } }, true);
+
+  function renderAnswers(taskId, box, newestFirst) {
+    const list = S.answers[taskId] || {};
+    const ids = Object.keys(list).sort(newestFirst ? (a, b) => list[b].ts - list[a].ts : byLabel);
+    if (!ids.length) { box.appendChild(el('p', 'leer', 'Noch keine Antworten.')); return; }
+    ids.forEach(pid => {
+      const a = list[pid], key = taskId + '|' + pid;
+      const r = el('div', 'antwort' + (fresh === key ? ' neu' : ''));
+      r.innerHTML = '<div class="wer"><i style="background:' + AR.colorOf(pid) + '"></i>' + AR.esc(label(pid)) + '<span class="zeit">' + AR.fmtTime(a.ts) + '</span></div>';
+      if (a.text) {
+        r.appendChild(el('p', 'text', AR.esc(a.text)));
+        if (AR.tts.ok) { const b = el('button', 'mittelknopf klein', AR.icon('speaker') + 'Vorlesen'); b.style.justifySelf = 'start'; b.onclick = () => AR.tts.speak(a.text, S.rate); r.appendChild(b); }
+      }
+      if (a.audio) {
+        if (audio.has(key)) { const au = el('audio'); au.controls = true; au.src = audioUrl(key); r.appendChild(au); }
+        else r.appendChild(el('span', 'muted klein', '(Aufnahme nicht mehr auf diesem Gerät)'));
+      }
+      box.appendChild(r);
     });
   }
 
+  /* ---------- 2 Durchführen ---------- */
+  function setCurrent(i) { S.current = i; if (i >= 0 && S.pace === 'live') vi = i; save(); broadcast(); drawLive(); }
+
+  function drawLive() {
+    if (view !== 'live') return;
+    if (anyPlaying()) { pendingDraw = true; return; }
+    const n = S.tasks.length, self = S.pace === 'self', c = S.current;
+    vi = Math.max(0, Math.min(vi, n - 1));
+    const t = S.tasks[vi], box = $('steuer'); box.innerHTML = '';
+
+    const stat = el('div', 'status-zeile');
+    stat.innerHTML = c < 0 ? '<span class="dot warn"></span>Die Kinder warten.' :
+      self ? '<span class="dot ok"></span>Alle Aufgaben sind freigegeben.' : '<span class="dot ok"></span>Die Kinder sehen Aufgabe ' + (c + 1) + ' von ' + n + '.';
+    box.appendChild(stat);
+
+    const nums = el('div', 'nummern');
+    S.tasks.forEach((x, i) => {
+      const b = el('button', (i === vi ? 'zeigt ' : '') + ((self ? c >= 0 : i === c) ? 'frei' : ''), String(i + 1));
+      b.setAttribute('aria-label', 'Aufgabe ' + (i + 1));
+      b.onclick = () => { vi = i; drawLive(); }; nums.appendChild(b);
+    });
+    box.appendChild(nums);
+
+    const ans = el('div', 'aufgabe-ansicht');
+    if (t.text) ans.appendChild(el('p', 't', AR.esc(t.text)));
+    if (t.q) ans.appendChild(el('p', 'q', AR.esc(t.q)));
+    if (!t.text && !t.q) ans.appendChild(el('p', 'leer', 'Diese Aufgabe ist noch leer. Du kannst sie unter „Aufgaben“ ausfüllen.'));
+    box.appendChild(ans);
+
+    const btns = el('div', 'knopfreihe');
+    const big = (cls, ic, txt, fn, right) => { const b = el('button', 'grossknopf ' + cls, right ? txt + AR.icon(ic) : AR.icon(ic) + txt); b.onclick = fn; return b; };
+    if (self) {
+      if (c < 0) btns.appendChild(big('weiter', 'play', 'Alle Aufgaben freigeben', () => setCurrent(0)));
+      else btns.appendChild(big('leise', 'pause', 'Pause', () => setCurrent(-1)));
+    } else if (c < 0 || vi !== c) {
+      btns.appendChild(big('weiter', 'play', 'Aufgabe ' + (vi + 1) + ' freigeben', () => setCurrent(vi)));
+      if (c >= 0) btns.appendChild(big('leise', 'pause', 'Pause', () => setCurrent(-1)));
+    } else {
+      if (vi > 0) btns.appendChild(big('leise', 'left', 'Zurück', () => setCurrent(vi - 1)));
+      if (vi < n - 1) btns.appendChild(big('weiter', 'right', 'Nächste Aufgabe', () => setCurrent(vi + 1), true));
+      btns.appendChild(big('leise', 'pause', 'Pause', () => setCurrent(-1)));
+    }
+    box.appendChild(btns);
+
+    // Antworten zur gewählten Aufgabe
+    const A = $('liveAns'); A.innerHTML = '';
+    const k = nAnswers(t.id), N = Object.keys(S.pupils).length;
+    const kopf = el('div', 'abschnitt-kopf', '<h2>Antworten zu Aufgabe ' + (vi + 1) + '</h2><span class="marke ' + (N && k >= N ? 'gut' : '') + '">' + k + ' von ' + N + '</span>');
+    A.appendChild(kopf);
+    if (N) {
+      const bal = el('div', 'balken', '<i style="width:' + Math.round(100 * Math.min(k, N) / N) + '%"></i>'); A.appendChild(bal);
+      const open = Object.keys(S.pupils).filter(pid => !(S.answers[t.id] || {})[pid]).sort(byLabel);
+      if (open.length && k) {
+        const w = el('div', 'chips'); w.appendChild(el('span', 'muted klein', 'Noch offen:'));
+        open.forEach(pid => w.appendChild(el('span', 'chip', '<i style="background:' + AR.colorOf(pid) + '"></i>' + AR.esc(label(pid)))));
+        A.appendChild(w);
+      }
+    } else A.appendChild(el('p', 'leer', 'Noch niemand verbunden. Zeige den Kindern den QR-Code mit „Code“ oben rechts.'));
+    renderAnswers(t.id, A, true);
+    fresh = null;
+  }
+
+  /* ---------- 3 Antworten (Auswertung) ---------- */
+  function drawAus() {
+    if (view !== 'aus') return;
+    if (anyPlaying()) { pendingDraw = true; return; }
+    const box = $('ausList'); box.innerHTML = '';
+    const N = Object.keys(S.pupils).length;
+    S.tasks.forEach((t, i) => {
+      const id = t.id, open = openAns.has(id), row = el('div', 'zeile' + (open ? ' offen' : ''));
+      const p = preview(t), k = nAnswers(id);
+      const head = el('button', 'kopfzeile', '<span class="nr">' + (i + 1) + '</span><span class="vorschau' + (p ? '' : ' leer') + '">' + AR.esc(p || 'Leere Aufgabe') + '</span>' +
+        '<span class="marke ' + (N && k >= N ? 'gut' : '') + '">' + k + ' von ' + N + '</span><span class="dreh">' + AR.icon('down') + '</span>');
+      head.onclick = () => { open ? openAns.delete(id) : openAns.add(id); drawAus(); };
+      row.appendChild(head);
+      if (open) { const inh = el('div', 'inhalt'); renderAnswers(id, inh, false); row.appendChild(inh); }
+      box.appendChild(row);
+    });
+    fresh = null;
+  }
+
   /* ---------- Export ---------- */
-  function stamp() { const d = new Date(); return d.toISOString().slice(0, 10); }
+  const stamp = () => new Date().toISOString().slice(0, 10);
   function exportTxt() {
     let out = 'Antwort-Runde ' + AR.fmtDate(Date.now()) + '\n\n';
     S.tasks.forEach((t, i) => {
       out += '=== Aufgabe ' + (i + 1) + ' ===\n' + (t.text ? t.text + '\n' : '') + (t.q ? t.q + '\n' : '') + '\n';
       const l = S.answers[t.id] || {};
-      Object.keys(l).sort((a, b) => label(a).localeCompare(label(b), 'de')).forEach(pid => {
-        out += label(pid) + ': ' + (l[pid].text || '') + (l[pid].audio ? ' [Sprachaufnahme]' : '') + '\n';
-      });
+      Object.keys(l).sort(byLabel).forEach(pid => { out += label(pid) + ': ' + (l[pid].text || '') + (l[pid].audio ? ' [Sprachaufnahme]' : '') + '\n'; });
       out += '\n';
     });
     AR.download('antworten-' + stamp() + '.txt', out, 'text/plain;charset=utf-8');
   }
   function exportCsv() {
     const q = s => '"' + String(s == null ? '' : s).replace(/"/g, '""') + '"';
-    const pids = Object.keys(S.pupils).sort((a, b) => label(a).localeCompare(label(b), 'de'));
+    const pids = Object.keys(S.pupils).sort(byLabel);
     const rows = [['Kind'].concat(S.tasks.map((t, i) => 'Aufgabe ' + (i + 1) + ': ' + (t.q || t.text || '').replace(/\s+/g, ' ').slice(0, 60)))];
     pids.forEach(pid => rows.push([label(pid)].concat(S.tasks.map(t => { const a = (S.answers[t.id] || {})[pid]; return a ? (a.text || '') + (a.audio ? ' [Sprachaufnahme]' : '') : ''; }))));
     AR.download('antworten-' + stamp() + '.csv', '﻿' + rows.map(r => r.map(q).join(';')).join('\n'), 'text/csv;charset=utf-8');
   }
 
   /* ---------- Bedienung ---------- */
-  $('pace').onclick = e => { const v = e.target.dataset.v; if (!v) return; S.pace = v; if (S.current >= 0 && v === 'self') S.current = 0; save(); broadcast(); drawControl(); };
+  document.querySelectorAll('[data-ic]').forEach(e => { e.innerHTML = AR.icon(e.dataset.ic); e.style.display = 'inline-flex'; });
+  document.querySelectorAll('dialog').forEach(d => {
+    d.addEventListener('click', e => { if (e.target === d || e.target.closest('[data-close]')) d.close(); });
+  });
+  $('reiter').onclick = e => { const b = e.target.closest('button'); if (b) showView(b.dataset.v); };
+  $('bToLive').onclick = () => showView('live');
+  $('bCode').onclick = () => { drawCode(); $('dCode').showModal(); };
+  $('bKinder').onclick = () => { $('dKinder').showModal(); drawKinder(); };
+  $('bSet').onclick = () => { drawSettings(); $('dSet').showModal(); };
+  $('pace').onclick = e => { const v = e.target.dataset.v; if (!v) return; S.pace = v; if (v === 'self' && S.current >= 0) S.current = 0; save(); broadcast(); drawSettings(); drawLive(); };
   $('autoRead').onchange = e => { S.autoRead = e.target.checked; save(); broadcast(); };
   $('rate').onchange = e => { S.rate = parseFloat(e.target.value); save(); broadcast(); };
-  $('bNext').onclick = () => setCurrent(S.pace === 'self' ? 0 : S.current + 1);
-  $('bPrev').onclick = () => setCurrent(Math.max(0, S.current - 1));
-  $('bStop').onclick = () => setCurrent(-1);
-  $('bAdd').onclick = () => { S.tasks.push(newTask()); save(); broadcast(); drawTasks(); window.scrollTo(0, document.body.scrollHeight); };
-  $('bBulk').onclick = () => $('bulkBox').classList.toggle('hidden');
+  $('bAdd').onclick = () => { const t = newTask(); S.tasks.push(t); openTask = t.id; save(); broadcast(); drawTasks(); };
+  $('bBulk').onclick = () => $('dBulk').showModal();
   $('bBulkOk').onclick = () => {
     const blocks = $('bulkTxt').value.split(/\n\s*\n/).map(s => s.trim()).filter(Boolean);
     if (!blocks.length) return;
@@ -324,28 +421,23 @@
       if (lines.length > 1) { t.q = lines.pop(); t.text = lines.join('\n'); } else t.q = lines[0];
       S.tasks.push(t);
     });
-    $('bulkTxt').value = ''; $('bulkBox').classList.add('hidden'); save(); broadcast(); drawTasks();
-  };
-  $('tabs').onclick = e => {
-    const v = e.target.closest('button'); if (!v || !v.dataset.v) return; tab = v.dataset.v;
-    document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b === v));
-    $('tasksView').classList.toggle('hidden', tab !== 'tasks'); $('ansView').classList.toggle('hidden', tab !== 'ans'); drawAnswers();
+    $('bulkTxt').value = ''; $('dBulk').close(); save(); broadcast(); drawTasks();
   };
   $('bExpTxt').onclick = exportTxt; $('bExpCsv').onclick = exportCsv;
-  $('bFull').onclick = drawBig;
   $('bNew').onclick = () => {
     if (total() && !confirm('Neue Runde starten? Die Antworten dieser Runde werden gelöscht. Vorher bitte exportieren!')) return;
-    S.round = AR.rid(6); S.room = AR.genCode(4); S.answers = {}; S.pupils = {}; S.current = -1; audio.clear(); idb.clear(); online.clear();
+    S.round = AR.rid(6); S.room = AR.genCode(4); S.answers = {}; S.pupils = {}; S.current = -1; vi = 0;
+    audio.clear(); urls.forEach(u => URL.revokeObjectURL(u)); urls.clear(); idb.clear(); online.clear();
     conns.forEach((pid, c) => c.close()); conns.clear();
-    save(); drawHeader(); drawPupils(); drawTasks(); drawAnswers(); startHost();
+    save(); $('dSet').close(); drawHead(); drawKinder(); showView('aufgaben'); startHost();
   };
 
   /* ---------- Start ---------- */
+  $('ver').textContent = AR.VERSION;
   idb.open().then(idb.all.bind(idb)).then(rows => {
     rows.forEach(([k, v]) => { const [r, ...rest] = k.split('|'); if (r === 'v') voices.set(rest.join('|'), v); else if (r === S.round) audio.set(rest.join('|'), v); });
-    drawTasks();
-    drawAnswers();
+    drawTasks(); drawLive(); drawAus();
   });
-  save(); drawHeader(); drawTasks(); drawPupils(); drawAnswers(); startHost();
+  save(); drawHead(); showView(S.current >= 0 ? 'live' : 'aufgaben'); startHost();
   addEventListener('beforeunload', e => { if (conns.size) { e.preventDefault(); e.returnValue = ''; } });
 })();
