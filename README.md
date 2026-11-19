@@ -105,13 +105,15 @@ Die Lehrer-Seite muss offen bleiben, solange die Kinder antworten. Lädst du sie
 
 ## Gestaltung
 
-Angelehnt an die Kirmes-Kiosk-App (Erscheinungsbild München 1972, Otl Aicher): helle Farben, flache Flächen, Dunkelblau statt Schwarz, Markise, kräftige Knöpfe. Eigene Linien-Symbole, keine Emojis. Schriften Andika (gut lesbar) und Grandstander, lokal in `schriften/` (SIL Open Font License). Hell- und Dunkelmodus folgen dem Gerät.
+Gemeinsames Design der Unterrichts-Apps, angelehnt an die Farben der Spiele München 1972 (Otl Aicher). Die Farben stehen in `design.css`, die Regeln in [DESIGN.md](DESIGN.md): auf jeder Farbfläche dunkelblaue Schrift, kein Rot, kein Schwarz, flache Flächen. Oben steht das Farbband wie in den anderen Apps. Eigene Linien-Symbole, keine Emojis. Schrift Andika, lokal in `schriften/` (SIL Open Font License). Grandstander nutzt nur noch das Infoblatt. Hell- und Dunkelmodus folgen dem Gerät.
 
 ## Technik
 
 ```
 index.html  lehrer.html  schueler.html
-css/style.css    Gestaltung
+design.css      gemeinsame Farben und Grundregeln (in allen Apps gleich)
+DESIGN.md       Regeln für das gemeinsame Design
+css/style.css   Gestaltung dieser App
 schriften/      Andika, Grandstander (lokal)
 js/common.js    Hilfen, Speicher, QR, Symbole, Pseudonyme, Sprachausgabe
 js/net.js       PeerJS/WebRTC oder ?net=bc (BroadcastChannel für Tests)

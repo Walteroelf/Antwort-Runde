@@ -117,8 +117,8 @@ window.AR = window.AR || {};
   document.addEventListener('DOMContentLoaded', AR.fillIcons);
   AR.icon = (name, extra) => '<svg class="ic' + (extra ? ' ' + extra : '') + '" viewBox="0 0 24 24" aria-hidden="true">' + (IC[name] || '') + '</svg>';
 
-  // Farben für Kinder (Aicher-Palette), damit man Antworten schneller zuordnen kann
-  const PAL = ['#3d9ad6', '#2f9e55', '#f39325', '#8cc63f', '#9fd3f0', '#ffd200', '#c5ccd3', '#1f6fae'];
+  // Farben für Kinder (Olympia-72-Palette aus design.css), damit man Antworten schneller zuordnen kann
+  const PAL = ['#4DB2E6', '#46A84A', '#F39200', '#A6D27A', '#FFD100', '#B9C1C8', '#0067B1'];
   AR.colorOf = function (id) { let h = 0; const s = String(id); for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return PAL[h % PAL.length]; };
 
   /* ---------- Sprachausgabe (offline, Stimme des Geräts) ---------- */
