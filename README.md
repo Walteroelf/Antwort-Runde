@@ -105,7 +105,7 @@ Die Lehrer-Seite muss offen bleiben, solange die Kinder antworten. Lädst du sie
 
 ## Gestaltung
 
-Gemeinsames Design der Unterrichts-Apps, angelehnt an die Farben der Spiele München 1972 (Otl Aicher). Die Farben stehen in `design.css`, die Regeln in [DESIGN.md](DESIGN.md): auf jeder Farbfläche dunkelblaue Schrift, kein Rot, kein Schwarz, flache Flächen. Die Markise bleibt als Erkennungszeichen, in Hellblau. Eigene Linien-Symbole, keine Emojis. Schrift Andika, lokal in `schriften/` (SIL Open Font License). Grandstander nutzt nur noch das Infoblatt. Hell- und Dunkelmodus folgen dem Gerät.
+Gemeinsames Design der Unterrichts-Apps, angelehnt an die Farben der Spiele München 1972 (Otl Aicher). Die Farben stehen in `design.css`, die Regeln in [DESIGN.md](DESIGN.md): auf jeder Farbfläche dunkelblaue Schrift, kein Rot, kein Schwarz, flache Flächen. Oben steht das Farbband wie in den anderen Apps. Eigene Linien-Symbole, keine Emojis. Schrift Andika, lokal in `schriften/` (SIL Open Font License). Grandstander nutzt nur noch das Infoblatt. Hell- und Dunkelmodus folgen dem Gerät.
 
 ## Technik
 
