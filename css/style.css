@@ -1,29 +1,23 @@
-/* Antwort-Runde: Gestaltung angelehnt an Kirmes-Kiosk (München 1972, Otl Aicher):
-   helle, heitere Farben, flache Flächen, Dunkelblau statt Schwarz, Markise, Schilder, kräftige Knöpfe.
-   Schriften liegen lokal in schriften/ (SIL Open Font License). */
+/* Antwort-Runde: gemeinsames Design der Unterrichts-Apps (Olympia 72, Otl Aicher).
+   Farben, Schrift und Grundregeln aus design.css, Regeln in DESIGN.md.
+   Auf jeder Farbfläche steht Dunkelblau, keine weiße Schrift, kein Rot, kein Schwarz, flach ohne Schatten.
+   Die Markise bleibt als Erkennungszeichen, jetzt in Hellblau. Hier stehen nur die Namen, die diese App zusätzlich nutzt. */
 @font-face { font-family: "Andika"; font-weight: 400; font-display: swap; src: url("../schriften/andika-400.woff2") format("woff2"); }
 @font-face { font-family: "Andika"; font-weight: 700; font-display: swap; src: url("../schriften/andika-700.woff2") format("woff2"); }
-@font-face { font-family: "Grandstander"; font-weight: 700 900; font-display: swap; src: url("../schriften/grandstander.woff2") format("woff2"); }
 
 :root {
-  --blau: #3d9ad6; --hellblau: #9fd3f0; --gruen: #2f9e55; --gelb: #ffd200; --orange: #f39325;
-  --himmel: #f5f7f9; --tresen: #ffffff; --flaeche: #eef1f4;
-  --holz: #1d3a5c; --holz-hell: #5b7491;
-  --markise: #1f6fae; --auf-markise: #ffffff;
-  --senf: #9fd3f0; --auf-senf: #12304f;
-  --gut: #2f9e55; --gut-hell: #e3f3e8; --gut-dunkel: #1d5e25;
-  --hm: #c76f0a; --hm-hell: #fdf0dc;
-  --bad: #c0392b;
-  --linie: #dfe5ec;
-  --schrift: "Andika", system-ui, sans-serif;
-  --anzeige: "Grandstander", "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
-  color-scheme: light;
+  --himmel: var(--hg); --tresen: var(--karte); --flaeche: var(--flaeche-2);
+  --holz: var(--text); --holz-hell: var(--leise);
+  --markise: var(--hellblau);
+  --senf: var(--hellblau); --auf-senf: var(--dunkelblau);
+  --gut: var(--gruen); --gut-text: var(--gruen-text); --gut-hell: #E3F2E3;
+  --hm: var(--hinweis-text); --hm-hell: #FDEFD9;
+  --bad: var(--hinweis-text); /* Fehler zeigt Orange, kein Rot */
+  --anzeige: var(--schrift); /* Überschriften auch in Andika */
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --himmel: #121c27; --tresen: #1b2735; --flaeche: #243345; --holz: #e8f0f7; --holz-hell: #9fb3c8;
-    --markise: #2c6fa6; --senf: #9fd3f0; --auf-senf: #12304f;
-    --gut: #45b86b; --gut-hell: #17331f; --gut-dunkel: #1d5e25; --hm: #f3a24a; --hm-hell: #3a2914; --bad: #ff8a7a; --linie: #2c3d50; color-scheme: dark;
+    --gut-text: var(--hellgruen); --gut-hell: #17331F; --hm-hell: #3A2914;
   }
 }
 
@@ -39,7 +33,7 @@ body {
 [hidden] { display: none !important; }
 h1, h2, h3 { font-family: var(--anzeige); margin: 0; line-height: 1.2; }
 button { font: inherit; color: inherit; cursor: pointer; }
-button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible { outline: 4px solid var(--senf); outline-offset: 3px; }
+/* Fokus-Rahmen kommt aus design.css (Gelb innen, Dunkelblau außen) */
 .muted { color: var(--holz-hell); }
 .klein { font-size: 16px; }
 svg.ic { width: 1.25em; height: 1.25em; flex: none; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; vertical-align: -.2em; }
@@ -50,27 +44,27 @@ svg.ic .f { fill: currentColor; stroke: none; }
   margin-left: calc(-1 * max(16px, env(safe-area-inset-left, 0px)));
   margin-right: calc(-1 * max(16px, env(safe-area-inset-right, 0px)));
   padding-top: env(safe-area-inset-top, 0px);
-  background: repeating-linear-gradient(90deg, var(--markise) 0 56px, #fff 56px 112px);
+  background: repeating-linear-gradient(90deg, var(--markise) 0 56px, var(--weiss) 56px 112px);
   position: relative;
 }
 .markise::after {
   content: ""; position: absolute; left: 0; right: 0; bottom: -18px; height: 18px;
   background: radial-gradient(circle at 28px 0, var(--markise) 27px, transparent 28px) 0 0 / 112px 18px repeat-x,
-              radial-gradient(circle at 84px 0, #fff 27px, transparent 28px) 0 0 / 112px 18px repeat-x;
+              radial-gradient(circle at 84px 0, var(--weiss) 27px, transparent 28px) 0 0 / 112px 18px repeat-x;
 }
 .kopf { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 12px max(16px, env(safe-area-inset-right, 0px)) 12px max(16px, env(safe-area-inset-left, 0px)); }
 .kopf .platz { flex: 1; }
 .schild-titel {
-  font-weight: 900; font-size: clamp(22px, 4.5vw, 34px); letter-spacing: .02em;
+  font-weight: 700; font-size: clamp(22px, 4.5vw, 34px); letter-spacing: .02em;
   background: var(--tresen); color: var(--holz); border: 4px solid var(--holz); border-radius: 14px;
-  padding: 0 16px; box-shadow: 0 4px 0 var(--holz); margin: 0;
+  padding: 0 16px; margin: 0;
 }
 .rundknopf {
   width: 54px; height: 54px; border-radius: 50%; border: 3px solid var(--holz);
-  background: var(--tresen); display: grid; place-items: center; box-shadow: 0 3px 0 var(--holz); padding: 0;
+  background: var(--tresen); display: grid; place-items: center; padding: 0;
 }
 .rundknopf svg.ic { width: 28px; height: 28px; }
-.rundknopf:active, .mittelknopf:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--holz); }
+.rundknopf:active, .mittelknopf:active { transform: translateY(2px); }
 
 main { max-width: 980px; margin: 40px auto 0; display: grid; gap: 22px; }
 
@@ -78,25 +72,23 @@ main { max-width: 980px; margin: 40px auto 0; display: grid; gap: 22px; }
 .mittelknopf {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   border: 3px solid var(--holz); background: var(--tresen); border-radius: 14px; padding: 8px 16px;
-  font-weight: 700; font-size: 17px; min-height: 48px; box-shadow: 0 3px 0 var(--holz);
+  font-weight: 700; font-size: 17px; min-height: 48px; 
 }
 .mittelknopf.primaer { background: var(--senf); color: var(--auf-senf); }
-.mittelknopf.warnung { border-color: var(--bad); color: var(--bad); box-shadow: 0 3px 0 var(--bad); }
+.mittelknopf.warnung { border-color: var(--bad); color: var(--bad); }
 .mittelknopf.klein { min-height: 40px; padding: 4px 12px; font-size: 16px; border-radius: 12px; }
-.mittelknopf:disabled { opacity: .4; box-shadow: none; }
+.mittelknopf:disabled { opacity: .4; }
 .grossknopf {
   display: flex; align-items: center; justify-content: center; gap: 14px; width: 100%;
   min-height: 76px; padding: 12px 24px; border-radius: 20px; border: 4px solid var(--holz);
-  background: var(--senf); color: var(--auf-senf); font-family: var(--anzeige); font-weight: 900; font-size: 26px;
-  box-shadow: 0 6px 0 var(--holz); text-align: center;
+  background: var(--senf); color: var(--auf-senf); font-family: var(--anzeige); font-weight: 700; font-size: 26px; text-align: center;
 }
 .grossknopf svg.ic { width: 38px; height: 38px; }
-.grossknopf:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--holz); }
-.grossknopf.weiter { background: var(--gut); color: #fff; border-color: var(--gut); box-shadow: 0 6px 0 var(--gut-dunkel); }
-.grossknopf.weiter:active { box-shadow: 0 2px 0 var(--gut-dunkel); }
+.grossknopf:active { transform: translateY(4px); }
+.grossknopf.weiter { background: var(--gut); color: var(--dunkelblau); border-color: var(--gut); }
 .grossknopf.leise { background: var(--tresen); color: var(--holz); font-size: 21px; min-height: 64px; }
-.grossknopf.aufnahme { background: var(--bad); border-color: var(--bad); color: #fff; box-shadow: 0 6px 0 #7d2218; animation: puls 1.2s infinite; }
-.grossknopf:disabled { opacity: .5; box-shadow: none; transform: none; }
+.grossknopf.aufnahme { background: var(--orange); border-color: var(--orange); color: var(--dunkelblau); animation: puls 1.2s infinite; }
+.grossknopf:disabled { opacity: .5; transform: none; }
 @keyframes puls { 50% { opacity: .75; } }
 .knopfreihe { display: flex; gap: 14px; flex-wrap: wrap; }
 .knopfreihe > * { flex: 1 1 220px; }
@@ -117,16 +109,16 @@ label.feld { display: grid; gap: 4px; font-size: 16px; color: var(--holz-hell); 
 .seg button.an { background: var(--senf); color: var(--auf-senf); }
 
 /* ---------- Karten ---------- */
-.tresen { background: var(--tresen); border: 4px solid var(--holz); border-radius: 22px; padding: 18px; display: grid; gap: 14px; box-shadow: 0 6px 0 var(--holz); }
+.tresen { background: var(--tresen); border: 4px solid var(--holz); border-radius: 22px; padding: 18px; display: grid; gap: 14px; }
 .schritt { background: var(--tresen); border: 3px solid var(--linie); border-radius: 20px; padding: 16px; display: grid; gap: 12px; }
 .abschnitt-kopf { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .abschnitt-kopf h2 { font-size: 24px; flex: 1; min-width: 0; }
 .nr {
   flex: none; width: 40px; height: 40px; border-radius: 50%; background: var(--senf); color: var(--auf-senf);
-  display: grid; place-items: center; font-family: var(--anzeige); font-weight: 900; font-size: 21px;
+  display: grid; place-items: center; font-family: var(--anzeige); font-weight: 700; font-size: 21px;
 }
 .marke { display: inline-block; padding: 1px 10px; border-radius: 99px; background: var(--flaeche); font-size: 15px; font-weight: 700; white-space: nowrap; }
-.marke.gut { background: var(--gut-hell); color: var(--gut); }
+.marke.gut { background: var(--gut-hell); color: var(--gut-text); }
 .dot { display: inline-block; flex: none; width: 12px; height: 12px; border-radius: 50%; background: var(--holz-hell); }
 .dot.ok { background: var(--gut); } .dot.warn { background: var(--orange); } .dot.bad { background: var(--bad); }
 .leer { color: var(--holz-hell); margin: 0; }
@@ -137,12 +129,12 @@ label.feld { display: grid; gap: 4px; font-size: 16px; color: var(--holz-hell); 
 .reiter { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 .reiter button {
   display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 60px; padding: 6px 10px;
-  border: 3px solid var(--holz); border-radius: 16px; background: var(--tresen); font-family: var(--anzeige); font-weight: 900; font-size: 20px; box-shadow: 0 4px 0 var(--holz);
+  border: 3px solid var(--holz); border-radius: 16px; background: var(--tresen); font-family: var(--anzeige); font-weight: 700; font-size: 20px; 
 }
-.reiter button .nr { width: 32px; height: 32px; font-size: 17px; background: var(--flaeche); }
+.reiter button .nr { width: 32px; height: 32px; font-size: 17px; background: var(--flaeche); color: var(--text); }
 .reiter button.an { background: var(--senf); color: var(--auf-senf); }
-.reiter button.an .nr { background: var(--holz); color: #fff; }
-.reiter button:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--holz); }
+.reiter button.an .nr { background: var(--weiss); color: var(--dunkelblau); }
+.reiter button:active { transform: translateY(3px); }
 @media (max-width: 560px) { .reiter button { font-size: 16px; flex-direction: column; gap: 2px; min-height: 66px; } }
 
 /* ---------- Aufgabenliste (Lehrer) ---------- */
@@ -162,9 +154,9 @@ label.feld { display: grid; gap: 4px; font-size: 16px; color: var(--holz-hell); 
 .nummern { display: flex; gap: 8px; flex-wrap: wrap; }
 .nummern button {
   width: 52px; height: 52px; border-radius: 50%; border: 3px solid var(--holz-hell); background: var(--tresen);
-  font-family: var(--anzeige); font-weight: 900; font-size: 20px; position: relative; padding: 0;
+  font-family: var(--anzeige); font-weight: 700; font-size: 20px; position: relative; padding: 0;
 }
-.nummern button.zeigt { border-color: var(--holz); background: var(--senf); color: var(--auf-senf); box-shadow: 0 3px 0 var(--holz); }
+.nummern button.zeigt { border-color: var(--holz); background: var(--senf); color: var(--auf-senf); }
 .nummern button.frei { border-color: var(--gut); }
 .nummern button.frei::after { content: ""; position: absolute; right: -2px; top: -2px; width: 14px; height: 14px; border-radius: 50%; background: var(--gut); border: 2px solid var(--tresen); }
 .aufgabe-ansicht { display: grid; gap: 6px; }
@@ -192,7 +184,7 @@ dialog::backdrop { background: rgba(10, 20, 35, .55); }
 .dialog-inhalt { padding: 16px; display: grid; gap: 16px; }
 .qr-gross { display: grid; justify-items: center; gap: 12px; text-align: center; }
 .qr-gross canvas { width: min(300px, 70vw); height: auto; aspect-ratio: 1; border: 3px solid var(--holz); border-radius: 12px; image-rendering: pixelated; }
-.code-gross { font-family: var(--anzeige); font-weight: 900; font-size: clamp(48px, 14vw, 84px); letter-spacing: .14em; line-height: 1; padding-left: .14em; }
+.code-gross { font-family: var(--anzeige); font-weight: 700; font-size: clamp(48px, 14vw, 84px); letter-spacing: .14em; line-height: 1; padding-left: .14em; }
 .kind-zeile { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .kind-zeile select { flex: 1 1 100%; min-height: 40px; font-size: 15px; }
 .kind-zeile .n { flex: 1; min-width: 0; font-weight: 700; }
@@ -211,8 +203,8 @@ h3.privat svg.ic { width: 28px; height: 28px; color: var(--gut); }
 
 /* ---------- Startseite ---------- */
 .kacheln { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; }
-.kachel { display: grid; gap: 8px; text-decoration: none; color: inherit; background: var(--tresen); border: 4px solid var(--holz); border-radius: 22px; padding: 20px; box-shadow: 0 6px 0 var(--holz); }
-.kachel:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--holz); }
+.kachel { display: grid; gap: 8px; text-decoration: none; color: inherit; background: var(--tresen); border: 4px solid var(--holz); border-radius: 22px; padding: 20px; }
+.kachel:active { transform: translateY(4px); }
 .kachel .bild { width: 64px; height: 64px; border-radius: 50%; background: var(--senf); color: var(--auf-senf); display: grid; place-items: center; }
 .kachel .bild svg.ic { width: 34px; height: 34px; }
 .kachel h2 { font-size: 26px; }
@@ -220,14 +212,14 @@ h3.privat svg.ic { width: 28px; height: 28px; color: var(--gut); }
 /* ---------- Schüler ---------- */
 .kind { max-width: 780px; margin: 40px auto 0; display: grid; gap: 20px; }
 .kind .kopf { padding-top: 8px; padding-bottom: 8px; }
-.name-schild { background: #fff; color: var(--holz); border: 3px solid var(--holz); border-radius: 8px; padding: 2px 14px; font-weight: 700; font-size: 17px; box-shadow: 2px 3px 0 rgba(0,0,0,.2); }
+.name-schild { background: var(--weiss); color: var(--dunkelblau); border: 3px solid var(--holz); border-radius: 8px; padding: 2px 14px; font-weight: 700; font-size: 17px; }
 .fortschritt { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: space-between; font-size: 18px; }
 .punkte { display: flex; gap: 6px; flex-wrap: wrap; }
 .punkt { width: 20px; height: 20px; border-radius: 50%; border: 3px solid var(--holz-hell); background: var(--tresen); }
 .punkt.jetzt { border-color: var(--holz); background: var(--senf); }
 .punkt.fertig { border-color: var(--gut); background: var(--gut); }
 .aufgabe-karte .t { margin: 0; font-size: 24px; line-height: 1.5; white-space: pre-wrap; }
-.aufgabe-karte .q { margin: 0; font-family: var(--anzeige); font-weight: 800; font-size: clamp(26px, 5vw, 34px); line-height: 1.3; white-space: pre-wrap; text-wrap: balance; }
+.aufgabe-karte .q { margin: 0; font-family: var(--anzeige); font-weight: 700; font-size: clamp(26px, 5vw, 34px); line-height: 1.3; white-space: pre-wrap; text-wrap: balance; }
 .kind textarea { font-size: 24px; min-height: 160px; border-radius: 16px; border-color: var(--holz); }
 .aufnahme-box { display: grid; gap: 10px; }
 .aufnahme-box audio { width: 100%; }
@@ -239,7 +231,7 @@ h3.privat svg.ic { width: 28px; height: 28px; color: var(--gut); }
 .warten .bild { width: 110px; height: 110px; border-radius: 50%; background: var(--senf); color: var(--auf-senf); display: grid; place-items: center; }
 .warten .bild svg.ic { width: 56px; height: 56px; }
 .warten h2 { font-size: clamp(30px, 6vw, 42px); }
-.namensschild { display: inline-block; background: #fff; color: var(--holz); border: 4px solid var(--holz); border-radius: 10px; padding: 8px 24px; font-family: var(--anzeige); font-weight: 900; font-size: clamp(26px, 6vw, 38px); box-shadow: 3px 4px 0 rgba(0,0,0,.2); }
+.namensschild { display: inline-block; background: var(--weiss); color: var(--dunkelblau); border: 4px solid var(--holz); border-radius: 10px; padding: 8px 24px; font-family: var(--anzeige); font-weight: 700; font-size: clamp(26px, 6vw, 38px); }
 .status {
   position: fixed; right: max(10px, env(safe-area-inset-right, 0px)); bottom: max(10px, env(safe-area-inset-bottom, 0px));
   background: var(--tresen); border: 2px solid var(--linie); border-radius: 99px; padding: 2px 12px; font-size: 14px; display: flex; gap: 8px; align-items: center; color: var(--holz-hell);
@@ -259,16 +251,14 @@ body.kidpage { height: 100vh; height: 100dvh; display: flex; flex-direction: col
 .kidpage .fortschritt { flex: none; flex-wrap: nowrap; justify-content: flex-start; gap: 10px; font-size: 17px; }
 .kidpage .fortschritt .grow { flex: 1; min-width: 0; }
 .rundknopf.klein { width: 44px; height: 44px; flex: none; }
-.rundknopf:disabled { opacity: .35; box-shadow: none; }
+.rundknopf:disabled { opacity: .35; }
 .bildschirm { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) minmax(0, 1.25fr); gap: 12px; }
 .s-frage, .s-antwort { min-height: 0; display: flex; flex-direction: column; gap: 10px; }
 .s-frage .aufgabe-karte { flex: 1; min-height: 0; overflow: auto; align-content: start; padding: 14px 16px; gap: 8px; }
 .aufgabe-karte .t { font-size: clamp(19px, 2.6vw, 24px); }
 .aufgabe-karte .q { font-size: clamp(22px, 3.4vw, 30px); }
 .s-antwort textarea { flex: 1; min-height: 70px; resize: none; font-size: clamp(19px, 2.8vw, 24px); }
-.kind .grossknopf { min-height: 58px; padding: 8px 16px; font-size: clamp(18px, 2.6vw, 22px); border-radius: 16px; box-shadow: 0 4px 0 var(--holz); gap: 10px; }
-.kind .grossknopf.weiter { box-shadow: 0 4px 0 var(--gut-dunkel); }
-.kind .grossknopf.aufnahme { box-shadow: 0 4px 0 #7d2218; }
+.kind .grossknopf { min-height: 58px; padding: 8px 16px; font-size: clamp(18px, 2.6vw, 22px); border-radius: 16px; gap: 10px; }
 .kind .grossknopf svg.ic { width: 28px; height: 28px; }
 .werkzeuge { display: flex; gap: 10px; flex: none; flex-wrap: wrap; }
 .werkzeuge > * { flex: 1 1 150px; min-width: 0; }
