@@ -9,14 +9,14 @@
   --himmel: var(--hg); --tresen: var(--karte); --flaeche: var(--flaeche-2);
   --holz: var(--text); --holz-hell: var(--leise);
   --senf: var(--hellblau); --auf-senf: var(--dunkelblau);
-  --gut: var(--gruen); --gut-text: var(--gruen-text); --gut-hell: #E3F2E3;
+  --gut: var(--gruen); --gut-text: var(--gruen-schrift); --gut-hell: #E3F2E3;
   --hm: var(--hinweis-text); --hm-hell: #FDEFD9;
   --bad: var(--hinweis-text); /* Fehler zeigt Orange, kein Rot */
   --anzeige: var(--schrift); /* Überschriften auch in Andika */
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --gut-text: var(--hellgruen); --gut-hell: #17331F; --hm-hell: #3A2914;
+    --gut-hell: var(--flaeche-2); --hm-hell: var(--flaeche-2);
   }
 }
 
