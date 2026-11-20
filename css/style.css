@@ -9,8 +9,8 @@
   --himmel: var(--hg); --tresen: var(--karte); --flaeche: var(--flaeche-2);
   --holz: var(--text); --holz-hell: var(--leise);
   --senf: var(--hellblau); --auf-senf: var(--dunkelblau);
-  --gut: var(--gruen); --gut-text: var(--gruen-schrift); --gut-hell: #E3F2E3;
-  --hm: var(--hinweis-text); --hm-hell: #FDEFD9;
+  --gut: var(--gruen); --gut-text: var(--gruen-schrift); --gut-hell: color-mix(in srgb, var(--gruen) 16%, var(--karte));
+  --hm: var(--hinweis-text); --hm-hell: color-mix(in srgb, var(--orange) 16%, var(--karte));
   --bad: var(--hinweis-text); /* Fehler zeigt Orange, kein Rot */
   --anzeige: var(--schrift); /* Überschriften auch in Andika */
 }
@@ -24,7 +24,7 @@
 html, body { margin: 0; }
 body {
   background: var(--himmel); color: var(--holz);
-  font-family: var(--schrift); font-size: 19px; line-height: 1.4;
+  font-family: var(--schrift); font-size: var(--gr-1); line-height: 1.4;
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
   padding-bottom: 48px;
@@ -35,8 +35,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
 /* Fokus-Rahmen kommt aus design.css (Gelb innen, Dunkelblau außen) */
 .muted { color: var(--holz-hell); }
 .klein { font-size: 16px; }
-svg.ic { width: 1.25em; height: 1.25em; flex: none; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; vertical-align: -.2em; }
-svg.ic .f { fill: currentColor; stroke: none; }
+/* Symbole: Grundform kommt aus design.css (.symbol). Hier nur die gefüllten Teile. */
+svg.symbol .f { fill: currentColor; stroke: none; }
 
 /* ---------- Kopfzeile mit Farbband (wie die anderen Apps) ----------
    Die Klasse heißt aus alter Zeit noch .markise. */
@@ -56,10 +56,10 @@ svg.ic .f { fill: currentColor; stroke: none; }
 .kopf .platz { flex: 1; }
 .schild-titel { font-weight: 700; font-size: clamp(22px, 4.5vw, 34px); color: var(--text); margin: 0; }
 .rundknopf {
-  width: 54px; height: 54px; border-radius: 50%; border: 3px solid var(--holz);
+  width: 54px; height: 54px; border-radius: 50%; border: var(--rand-breite) solid var(--rand);
   background: var(--tresen); display: grid; place-items: center; padding: 0;
 }
-.rundknopf svg.ic { width: 28px; height: 28px; }
+.rundknopf svg.symbol { width: 28px; height: 28px; }
 .rundknopf:active, .mittelknopf:active { transform: translateY(2px); }
 
 main { max-width: 980px; margin: 24px auto 0; display: grid; gap: 22px; }
@@ -67,21 +67,21 @@ main { max-width: 980px; margin: 24px auto 0; display: grid; gap: 22px; }
 /* ---------- Knöpfe ---------- */
 .mittelknopf {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  border: 3px solid var(--holz); background: var(--tresen); border-radius: 14px; padding: 8px 16px;
+  border: var(--rand-breite) solid var(--rand); background: var(--tresen); border-radius: var(--rundung); padding: 8px 16px;
   font-weight: 700; font-size: 17px; min-height: 48px; 
 }
-.mittelknopf.primaer { background: var(--senf); color: var(--auf-senf); }
+.mittelknopf.primaer { background: var(--app-akzent); color: var(--dunkelblau); border-color: transparent; min-height: var(--knopf-hoehe); }
 .mittelknopf.warnung { border-color: var(--bad); color: var(--bad); }
-.mittelknopf.klein { min-height: 40px; padding: 4px 12px; font-size: 16px; border-radius: 12px; }
+.mittelknopf.klein { min-height: 48px; padding: 4px 12px; font-size: 16px; border-radius: var(--rundung); }
 .mittelknopf:disabled { opacity: .4; }
 .grossknopf {
   display: flex; align-items: center; justify-content: center; gap: 14px; width: 100%;
-  min-height: 76px; padding: 12px 24px; border-radius: 20px; border: 4px solid var(--holz);
-  background: var(--senf); color: var(--auf-senf); font-family: var(--anzeige); font-weight: 700; font-size: 26px; text-align: center;
+  min-height: 64px; padding: 12px 24px; border-radius: var(--rundung-gross); border: var(--rand-breite) solid var(--rand);
+  background: var(--app-akzent); color: var(--dunkelblau); font-family: var(--anzeige); font-weight: 700; font-size: 26px; text-align: center;
 }
-.grossknopf svg.ic { width: 38px; height: 38px; }
+.grossknopf svg.symbol { width: 38px; height: 38px; }
 .grossknopf:active { transform: translateY(4px); }
-.grossknopf.weiter { background: var(--gut); color: var(--dunkelblau); border-color: var(--gut); }
+.grossknopf.weiter { background: var(--gruen); color: var(--dunkelblau); border-color: transparent; }
 .grossknopf.leise { background: var(--tresen); color: var(--holz); font-size: 21px; min-height: 64px; }
 .grossknopf.aufnahme { background: var(--orange); border-color: var(--orange); color: var(--dunkelblau); animation: puls 1.2s infinite; }
 .grossknopf:disabled { opacity: .5; transform: none; }
@@ -93,27 +93,27 @@ main { max-width: 980px; margin: 24px auto 0; display: grid; gap: 22px; }
 
 /* ---------- Felder ---------- */
 input, select, textarea {
-  font: inherit; font-weight: 400; background: var(--tresen); color: var(--holz); border: 3px solid var(--holz-hell); border-radius: 12px; padding: 10px 12px; max-width: 100%;
+  font: inherit; font-weight: 400; background: var(--tresen); color: var(--holz); border: var(--rand-breite) solid var(--rand); border-radius: var(--rundung); padding: 10px 12px; max-width: 100%;
 }
 input, select { min-height: 48px; }
 textarea { width: 100%; resize: vertical; min-height: 96px; line-height: 1.4; }
-label.feld { display: grid; gap: 4px; font-size: 16px; color: var(--holz-hell); font-weight: 700; }
+label.feld { display: grid; gap: 4px; font-size: 16px; color: var(--holz-hell); }
 .schalter { display: flex; align-items: center; gap: 12px; min-height: 48px; }
 .schalter input { width: 28px; height: 28px; min-height: 0; accent-color: var(--hellblau); }
-.seg { display: inline-flex; border: 3px solid var(--holz); border-radius: 14px; overflow: hidden; background: var(--tresen); }
-.seg button { border: 0; background: transparent; padding: 8px 16px; font-weight: 700; min-height: 46px; }
-.seg button.an { background: var(--senf); color: var(--auf-senf); }
+.seg { display: inline-flex; border: var(--rand-breite) solid var(--rand); border-radius: var(--rundung); overflow: hidden; background: var(--tresen); }
+.seg button { border: 0; background: transparent; padding: 8px 16px; font-weight: 700; min-height: 48px; }
+.seg button.an { background: var(--app-akzent); color: var(--dunkelblau); }
 
 /* ---------- Karten ---------- */
-.tresen { background: var(--tresen); border: 4px solid var(--holz); border-radius: 22px; padding: 18px; display: grid; gap: 14px; }
-.schritt { background: var(--tresen); border: 3px solid var(--linie); border-radius: 20px; padding: 16px; display: grid; gap: 12px; }
+.tresen { background: var(--tresen); border: var(--rand-breite) solid var(--rand); border-radius: var(--rundung-gross); padding: 18px; display: grid; gap: 14px; }
+.schritt { background: var(--tresen); border: var(--rand-breite) solid var(--linie); border-radius: var(--rundung-gross); padding: 16px; display: grid; gap: 12px; }
 .abschnitt-kopf { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .abschnitt-kopf h2 { font-size: 24px; flex: 1; min-width: 0; }
 .nr {
-  flex: none; width: 40px; height: 40px; border-radius: 50%; background: var(--senf); color: var(--auf-senf);
+  flex: none; width: 40px; height: 40px; border-radius: 50%; background: var(--senf); color: var(--dunkelblau);
   display: grid; place-items: center; font-family: var(--anzeige); font-weight: 700; font-size: 21px;
 }
-.marke { display: inline-block; padding: 1px 10px; border-radius: 99px; background: var(--flaeche); font-size: 15px; font-weight: 700; white-space: nowrap; }
+.marke { display: inline-block; padding: 1px 10px; border-radius: 99px; background: var(--flaeche); font-size: 15px; white-space: nowrap; }
 .marke.gut { background: var(--gut-hell); color: var(--gut-text); }
 .dot { display: inline-block; flex: none; width: 12px; height: 12px; border-radius: 50%; background: var(--holz-hell); }
 .dot.ok { background: var(--gut); } .dot.warn { background: var(--orange); } .dot.bad { background: var(--bad); }
@@ -125,120 +125,122 @@ label.feld { display: grid; gap: 4px; font-size: 16px; color: var(--holz-hell); 
 .reiter { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 .reiter button {
   display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 60px; padding: 6px 10px;
-  border: 3px solid var(--holz); border-radius: 16px; background: var(--tresen); font-family: var(--anzeige); font-weight: 700; font-size: 20px; 
+  border: var(--rand-breite) solid var(--rand); border-radius: var(--rundung); background: var(--tresen); font-family: var(--anzeige); font-weight: 700; font-size: 20px; 
 }
 .reiter button .nr { width: 32px; height: 32px; font-size: 17px; background: var(--flaeche); color: var(--text); }
-.reiter button.an { background: var(--senf); color: var(--auf-senf); }
+.reiter button.an { background: var(--senf); color: var(--dunkelblau); }
 .reiter button.an .nr { background: var(--weiss); color: var(--dunkelblau); }
 .reiter button:active { transform: translateY(3px); }
 @media (max-width: 560px) { .reiter button { font-size: 16px; flex-direction: column; gap: 2px; min-height: 66px; } }
 
 /* ---------- Aufgabenliste (Lehrer) ---------- */
 .liste { display: grid; gap: 10px; }
-.zeile { background: var(--tresen); border: 3px solid var(--linie); border-radius: 18px; overflow: hidden; }
+.zeile { background: var(--tresen); border: var(--rand-breite) solid var(--linie); border-radius: var(--rundung); overflow: hidden; }
 .zeile.offen { border-color: var(--holz); }
 .zeile > .kopfzeile { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; background: none; border: 0; text-align: left; min-height: 66px; }
-.zeile .vorschau { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
-.zeile .vorschau.leer { font-weight: 400; }
+.zeile .vorschau { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .zeile .dreh { transition: transform .15s; }
 .zeile.offen .dreh { transform: rotate(180deg); }
-.zeile .inhalt { padding: 4px 14px 16px; display: grid; gap: 12px; border-top: 3px solid var(--linie); padding-top: 14px; }
-.stimme { display: grid; gap: 8px; padding: 12px; border-radius: 14px; background: var(--flaeche); }
+.zeile .inhalt { padding: 4px 14px 16px; display: grid; gap: 12px; border-top: var(--rand-breite) solid var(--linie); padding-top: 14px; }
+.stimme { display: grid; gap: 8px; padding: 12px; border-radius: var(--rundung); background: var(--flaeche); }
 .stimme audio { width: 100%; max-width: 420px; height: 40px; }
 
 /* ---------- Durchführen (Lehrer) ---------- */
 .nummern { display: flex; gap: 8px; flex-wrap: wrap; }
 .nummern button {
-  width: 52px; height: 52px; border-radius: 50%; border: 3px solid var(--holz-hell); background: var(--tresen);
+  width: 52px; height: 52px; border-radius: 50%; border: var(--rand-breite) solid var(--rand); background: var(--tresen);
   font-family: var(--anzeige); font-weight: 700; font-size: 20px; position: relative; padding: 0;
 }
-.nummern button.zeigt { border-color: var(--holz); background: var(--senf); color: var(--auf-senf); }
+.nummern button.zeigt { border-color: var(--holz); background: var(--senf); color: var(--dunkelblau); }
 .nummern button.frei { border-color: var(--gut); }
 .nummern button.frei::after { content: ""; position: absolute; right: -2px; top: -2px; width: 14px; height: 14px; border-radius: 50%; background: var(--gut); border: 2px solid var(--tresen); }
 .aufgabe-ansicht { display: grid; gap: 6px; }
 .aufgabe-ansicht .t { margin: 0; white-space: pre-wrap; }
-.aufgabe-ansicht .q { margin: 0; font-family: var(--anzeige); font-weight: 700; font-size: 24px; line-height: 1.3; white-space: pre-wrap; }
-.status-zeile { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-weight: 700; }
+.aufgabe-ansicht .q { margin: 0; font-family: var(--anzeige); font-size: 24px; line-height: 1.3; white-space: pre-wrap; }
+.status-zeile { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip { display: inline-flex; align-items: center; gap: 6px; padding: 2px 12px 2px 8px; border-radius: 99px; background: var(--flaeche); font-size: 16px; }
 .chip i { width: 12px; height: 12px; border-radius: 50%; display: block; }
 
-.antwort { border: 3px solid var(--linie); border-radius: 16px; padding: 12px 14px; display: grid; gap: 6px; background: var(--tresen); }
-.antwort .wer { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-weight: 700; }
+.antwort { border: var(--rand-breite) solid var(--linie); border-radius: var(--rundung); padding: 12px 14px; display: grid; gap: 6px; background: var(--tresen); }
+.antwort .wer { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .antwort .wer i { width: 14px; height: 14px; border-radius: 50%; display: block; }
-.antwort .zeit { font-weight: 400; color: var(--holz-hell); font-size: 15px; }
+.antwort .zeit { color: var(--holz-hell); font-size: 15px; }
 .antwort .text { white-space: pre-wrap; font-size: 21px; margin: 0; }
 .antwort audio { width: 100%; max-width: 440px; height: 40px; }
 .antwort.neu { animation: huepfen .6s ease-out; }
 @keyframes huepfen { 0% { transform: scale(.96); background: var(--hm-hell); } 100% { transform: scale(1); } }
 
 /* ---------- Dialoge ---------- */
-dialog { border: 4px solid var(--holz); border-radius: 22px; background: var(--tresen); color: var(--holz); width: min(640px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); padding: 0; }
-dialog::backdrop { background: rgba(10, 20, 35, .55); }
-.dialog-kopf { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 12px; background: var(--tresen); border-bottom: 3px solid var(--linie); padding: 12px 16px; }
+dialog { border: var(--rand-breite) solid var(--rand); border-radius: var(--rundung-gross); background: var(--tresen); color: var(--holz); width: min(640px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); padding: 0; }
+dialog::backdrop { background: rgba(13, 43, 78, .6); }
+.dialog-kopf { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 12px; background: var(--tresen); border-bottom: var(--rand-breite) solid var(--linie); padding: 12px 16px; }
 .dialog-kopf h2 { flex: 1; font-size: 24px; }
 .dialog-inhalt { padding: 16px; display: grid; gap: 16px; }
 .qr-gross { display: grid; justify-items: center; gap: 12px; text-align: center; }
-.qr-gross canvas { width: min(300px, 70vw); height: auto; aspect-ratio: 1; border: 3px solid var(--holz); border-radius: 12px; image-rendering: pixelated; }
+.qr-gross canvas { width: min(300px, 70vw); height: auto; aspect-ratio: 1; border: var(--rand-breite) solid var(--rand); border-radius: var(--rundung); image-rendering: pixelated; }
 .code-gross { font-family: var(--anzeige); font-weight: 700; font-size: clamp(48px, 14vw, 84px); letter-spacing: .14em; line-height: 1; padding-left: .14em; }
 .kind-zeile { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.kind-zeile select { flex: 1 1 100%; min-height: 40px; font-size: 15px; }
-.kind-zeile .n { flex: 1; min-width: 0; font-weight: 700; }
+.kind-zeile select { flex: 1 1 100%; min-height: 48px; font-size: 15px; }
+.kind-zeile .n { flex: 1; min-width: 0; }
 .kind-zeile input { width: 180px; }
 @media (max-width: 520px) { .kind-zeile { flex-wrap: wrap; } .kind-zeile input { width: 100%; } }
 
-.hinweis { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 14px; border: 3px solid var(--gut); background: var(--gut-hell); font-size: 16px; line-height: 1.35; }
-.hinweis svg.ic { width: 26px; height: 26px; margin-top: 1px; }
+.hinweis { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: var(--rundung); border: var(--rand-breite) solid var(--gut); background: var(--gut-hell); font-size: 16px; line-height: 1.35; }
+.hinweis svg.symbol { width: 26px; height: 26px; margin-top: 1px; }
 .hinweis > span:first-child { flex: none; display: inline-flex; }
 .hinweis.warn { border-color: var(--hm); background: var(--hm-hell); }
-.hinweis b { font-weight: 700; }
+/* Hervorhebung durch Farbe statt Fettschrift (DESIGN.md) */
+.hinweis b { font-weight: 400; color: var(--gut-text); }
+.hinweis.warn b { color: var(--hinweis-text); }
+.stimme > b { font-weight: 400; font-size: var(--gr-2); }
 h3.privat { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
-h3.privat svg.ic { width: 28px; height: 28px; color: var(--gut); }
+h3.privat svg.symbol { width: 28px; height: 28px; color: var(--gut); }
 .dialog-inhalt h3 { font-size: 20px; }
 .feld > .hinweis, .feld > div > .hinweis { margin-top: 6px; }
 
 /* ---------- Startseite ---------- */
 .kacheln { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; }
-.kachel { display: grid; gap: 8px; text-decoration: none; color: inherit; background: var(--tresen); border: 4px solid var(--holz); border-radius: 22px; padding: 20px; }
+.kachel { display: grid; gap: 8px; text-decoration: none; color: inherit; background: var(--tresen); border: var(--rand-breite) solid var(--rand); border-radius: var(--rundung-gross); padding: 20px; }
 .kachel:active { transform: translateY(4px); }
-.kachel .bild { width: 64px; height: 64px; border-radius: 50%; background: var(--senf); color: var(--auf-senf); display: grid; place-items: center; }
-.kachel .bild svg.ic { width: 34px; height: 34px; }
+.kachel .bild { width: 64px; height: 64px; border-radius: 50%; background: var(--senf); color: var(--dunkelblau); display: grid; place-items: center; }
+.kachel .bild svg.symbol { width: 34px; height: 34px; }
 .kachel h2 { font-size: 26px; }
 
 /* ---------- Schüler ---------- */
 .kind { max-width: 780px; margin: 24px auto 0; display: grid; gap: 20px; }
 .kind .kopf { padding-top: 8px; padding-bottom: 8px; }
-.name-schild { background: var(--weiss); color: var(--dunkelblau); border: 3px solid var(--holz); border-radius: 8px; padding: 2px 14px; font-weight: 700; font-size: 17px; }
+.name-schild { background: var(--weiss); color: var(--dunkelblau); border: var(--rand-breite) solid var(--rand); border-radius: var(--rundung); padding: 2px 14px; font-size: 17px; }
 .fortschritt { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: space-between; font-size: 18px; }
 .punkte { display: flex; gap: 6px; flex-wrap: wrap; }
-.punkt { width: 20px; height: 20px; border-radius: 50%; border: 3px solid var(--holz-hell); background: var(--tresen); }
+.punkt { width: 20px; height: 20px; border-radius: 50%; border: var(--rand-breite) solid var(--rand); background: var(--tresen); }
 .punkt.jetzt { border-color: var(--holz); background: var(--senf); }
 .punkt.fertig { border-color: var(--gut); background: var(--gut); }
 .aufgabe-karte .t { margin: 0; font-size: 24px; line-height: 1.5; white-space: pre-wrap; }
-.aufgabe-karte .q { margin: 0; font-family: var(--anzeige); font-weight: 700; font-size: clamp(26px, 5vw, 34px); line-height: 1.3; white-space: pre-wrap; text-wrap: balance; }
-.kind textarea { font-size: 24px; min-height: 160px; border-radius: 16px; border-color: var(--holz); }
+.aufgabe-karte .q { margin: 0; font-family: var(--anzeige); font-size: clamp(26px, 5vw, 34px); line-height: 1.3; white-space: pre-wrap; text-wrap: balance; }
+.kind textarea { font-size: 24px; min-height: 160px; border-radius: var(--rundung); border-color: var(--holz); }
 .aufnahme-box { display: grid; gap: 10px; }
 .aufnahme-box audio { width: 100%; }
-.meldung { border-radius: 18px; padding: 14px 16px; display: flex; gap: 12px; align-items: center; font-weight: 700; font-size: 20px; }
-.meldung.gut { background: var(--gut-hell); border: 3px solid var(--gut); }
-.meldung.warte { background: var(--hm-hell); border: 3px solid var(--hm); }
-.meldung svg.ic { width: 34px; height: 34px; flex: none; }
+.meldung { border-radius: var(--rundung); padding: 14px 16px; display: flex; gap: 12px; align-items: center; font-size: 20px; }
+.meldung.gut { background: var(--gut-hell); border: var(--rand-breite) solid var(--gut); }
+.meldung.warte { background: var(--hm-hell); border: var(--rand-breite) solid var(--hm); }
+.meldung svg.symbol { width: 34px; height: 34px; flex: none; }
 .warten { text-align: center; display: grid; gap: 14px; justify-items: center; padding: 40px 10px; }
-.warten .bild { width: 110px; height: 110px; border-radius: 50%; background: var(--senf); color: var(--auf-senf); display: grid; place-items: center; }
-.warten .bild svg.ic { width: 56px; height: 56px; }
+.warten .bild { width: 110px; height: 110px; border-radius: 50%; background: var(--senf); color: var(--dunkelblau); display: grid; place-items: center; }
+.warten .bild svg.symbol { width: 56px; height: 56px; }
 .warten h2 { font-size: clamp(30px, 6vw, 42px); }
-.namensschild { display: inline-block; background: var(--weiss); color: var(--dunkelblau); border: 4px solid var(--holz); border-radius: 10px; padding: 8px 24px; font-family: var(--anzeige); font-weight: 700; font-size: clamp(26px, 6vw, 38px); }
+.namensschild { display: inline-block; background: var(--weiss); color: var(--dunkelblau); border: var(--rand-breite) solid var(--rand); border-radius: var(--rundung); padding: 8px 24px; font-family: var(--anzeige); font-weight: 700; font-size: clamp(26px, 6vw, 38px); }
 .status {
   position: fixed; right: max(10px, env(safe-area-inset-right, 0px)); bottom: max(10px, env(safe-area-inset-bottom, 0px));
   background: var(--tresen); border: 2px solid var(--linie); border-radius: 99px; padding: 2px 12px; font-size: 14px; display: flex; gap: 8px; align-items: center; color: var(--holz-hell);
 }
 
-@media (max-width: 520px) { body { font-size: 18px; } .grossknopf { font-size: 22px; min-height: 70px; } }
+@media (max-width: 520px) { .grossknopf { font-size: 22px; min-height: 64px; } }
 @media (prefers-reduced-motion: reduce) { .antwort.neu, .grossknopf.aufnahme { animation: none; } }
 
 /* ---------- Schüler: alles auf einem Bildschirm, ohne Scrollen ---------- */
 body.kidpage { height: 100vh; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; padding-bottom: 0; }
-.status-kopf { background: var(--tresen); border: 3px solid var(--holz); border-radius: 99px; padding: 0 12px; font-size: 15px; display: inline-flex; gap: 8px; align-items: center; min-height: 34px; }
+.status-kopf { background: var(--tresen); border: var(--rand-breite) solid var(--rand); border-radius: 99px; padding: 0 12px; font-size: 15px; display: inline-flex; gap: 8px; align-items: center; min-height: 34px; }
 .kidpage .markise { flex: none; }
 .kidpage .kopf { padding-top: 6px; padding-bottom: 6px; }
 .kidpage .schild-titel { font-size: clamp(20px, 3.6vw, 28px); }
@@ -246,7 +248,7 @@ body.kidpage { height: 100vh; height: 100dvh; display: flex; flex-direction: col
 .kidpage .kind > .warten { margin: auto; }
 .kidpage .fortschritt { flex: none; flex-wrap: nowrap; justify-content: flex-start; gap: 10px; font-size: 17px; }
 .kidpage .fortschritt .grow { flex: 1; min-width: 0; }
-.rundknopf.klein { width: 44px; height: 44px; flex: none; }
+.rundknopf.klein { width: 48px; height: 48px; flex: none; }
 .rundknopf:disabled { opacity: .35; }
 .bildschirm { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) minmax(0, 1.25fr); gap: 12px; }
 .s-frage, .s-antwort { min-height: 0; display: flex; flex-direction: column; gap: 10px; }
@@ -254,8 +256,8 @@ body.kidpage { height: 100vh; height: 100dvh; display: flex; flex-direction: col
 .aufgabe-karte .t { font-size: clamp(19px, 2.6vw, 24px); }
 .aufgabe-karte .q { font-size: clamp(22px, 3.4vw, 30px); }
 .s-antwort textarea { flex: 1; min-height: 70px; resize: none; font-size: clamp(19px, 2.8vw, 24px); }
-.kind .grossknopf { min-height: 58px; padding: 8px 16px; font-size: clamp(18px, 2.6vw, 22px); border-radius: 16px; gap: 10px; }
-.kind .grossknopf svg.ic { width: 28px; height: 28px; }
+.kind .grossknopf { min-height: var(--knopf-hoehe); padding: 8px 16px; font-size: clamp(18px, 2.6vw, 22px); border-radius: var(--rundung); gap: 10px; }
+.kind .grossknopf svg.symbol { width: 28px; height: 28px; }
 .werkzeuge { display: flex; gap: 10px; flex: none; flex-wrap: wrap; }
 .werkzeuge > * { flex: 1 1 150px; min-width: 0; }
 .aufnahme-box { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
@@ -265,7 +267,7 @@ body.kidpage { height: 100vh; height: 100dvh; display: flex; flex-direction: col
 .aufnahme-box.voll .grossknopf { min-height: 110px; }
 #sendSt { flex: none; min-height: 46px; display: flex; align-items: center; }
 #sendSt .meldung { width: 100%; padding: 6px 12px; font-size: 17px; border-width: 2px; }
-#sendSt .meldung svg.ic { width: 26px; height: 26px; }
+#sendSt .meldung svg.symbol { width: 26px; height: 26px; }
 .hinweis-klein { margin: 0; text-align: center; width: 100%; }
 /* Nur lesen: die Frage nutzt den ganzen Bildschirm */
 .bildschirm.nur-lesen { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); max-width: 760px; margin: 0 auto; width: 100%; }
@@ -276,9 +278,9 @@ body.kidpage { height: 100vh; height: 100dvh; display: flex; flex-direction: col
   .bildschirm { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: 16px; }
 }
 .aufgabe-bild { min-height: 0; display: grid; justify-items: center; }
-.aufgabe-bild img { max-width: 100%; max-height: 38dvh; object-fit: contain; border-radius: 12px; }
-.foto-klein { height: 52px; width: auto; max-width: 90px; border-radius: 8px; border: 3px solid var(--holz); object-fit: cover; }
-.vorschau-bild { max-width: 100%; max-height: 220px; width: auto; border-radius: 12px; border: 3px solid var(--linie); justify-self: start; }
-.antwort img.foto { max-width: min(100%, 320px); max-height: 240px; border-radius: 12px; border: 3px solid var(--linie); cursor: zoom-in; justify-self: start; }
+.aufgabe-bild img { max-width: 100%; max-height: 38dvh; object-fit: contain; border-radius: var(--rundung); }
+.foto-klein { height: 52px; width: auto; max-width: 90px; border-radius: var(--rundung); border: var(--rand-breite) solid var(--rand); object-fit: cover; }
+.vorschau-bild { max-width: 100%; max-height: 220px; width: auto; border-radius: var(--rundung); border: var(--rand-breite) solid var(--linie); justify-self: start; }
+.antwort img.foto { max-width: min(100%, 320px); max-height: 240px; border-radius: var(--rundung); border: var(--rand-breite) solid var(--linie); cursor: zoom-in; justify-self: start; }
 .antwort .zeit { margin-left: auto; }
-@media (max-height: 640px) { .kidpage .kind { margin-top: 12px; } .kind .grossknopf { min-height: 50px; } }
+@media (max-height: 640px) { .kidpage .kind { margin-top: 12px; } }

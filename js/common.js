@@ -42,7 +42,7 @@ window.AR = window.AR || {};
       const qr = qrcode(0, 'M'); qr.addData(url); qr.make();
       const n = qr.getModuleCount(), cell = 8, q = 3, size = (n + q * 2) * cell;
       const c = document.createElement('canvas'); c.width = c.height = size;
-      const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, size, size); g.fillStyle = '#000';
+      const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, size, size); g.fillStyle = '#0D2B4E';
       for (let r = 0; r < n; r++) for (let k = 0; k < n; k++) if (qr.isDark(r, k)) g.fillRect((k + q) * cell, (r + q) * cell, cell, cell);
       return c;
     } catch (e) { console.error(e); return null; }
@@ -115,7 +115,7 @@ window.AR = window.AR || {};
   AR.pickImage = function (cb) { const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.onchange = () => { if (i.files && i.files[0]) cb(i.files[0]); }; i.click(); };
   AR.fillIcons = () => document.querySelectorAll('[data-ic]').forEach(e => { e.innerHTML = AR.icon(e.dataset.ic); });
   document.addEventListener('DOMContentLoaded', AR.fillIcons);
-  AR.icon = (name, extra) => '<svg class="ic' + (extra ? ' ' + extra : '') + '" viewBox="0 0 24 24" aria-hidden="true">' + (IC[name] || '') + '</svg>';
+  AR.icon = (name, extra) => '<svg class="symbol' + (extra ? ' ' + extra : '') + '" viewBox="0 0 24 24" aria-hidden="true">' + (IC[name] || '') + '</svg>';
 
   // Farben für Kinder (Olympia-72-Palette aus design.css), damit man Antworten schneller zuordnen kann
   const PAL = ['#4DB2E6', '#46A84A', '#F39200', '#A6D27A', '#FFD100', '#B9C1C8', '#0067B1'];
