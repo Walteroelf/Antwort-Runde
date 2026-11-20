@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Erzeugt infoblatt.html (mit QR-Code als Vektorgrafik) und daraus per Chrome das PDF.
+Gestaltung nach DESIGN.md (Olympia 72): Andika, Hellblau, Dunkelblau als Schrift, flach, kein Rot, kein Schwarz.
 Aufruf: python3 bauen.py   (Chrome muss installiert sein)"""
 import subprocess, sys, pathlib, qrcode
 
 HERE = pathlib.Path(__file__).resolve().parent
 URL = "https://walteroelf.github.io/Antwort-Runde/"
 CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
-PDF = HERE.parent.parent / "Antwort-Runde-Infoblatt.pdf"
+PDF = pathlib.Path("/Users/chris/Documents/Claude-Projekte/Dokumente/Infoblaetter/Antwort-Runde-Infoblatt.pdf")
 
 def qr_svg(text):
     q = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_M, border=0, box_size=1)
@@ -23,59 +24,59 @@ HTML = f"""<!doctype html>
 <style>
 @font-face {{ font-family: "Andika"; font-weight: 400; src: url("../schriften/andika-400.woff2") format("woff2"); }}
 @font-face {{ font-family: "Andika"; font-weight: 700; src: url("../schriften/andika-700.woff2") format("woff2"); }}
-@font-face {{ font-family: "Grandstander"; font-weight: 700 900; src: url("../schriften/grandstander.woff2") format("woff2"); }}
 @page {{ size: A4; margin: 0; }}
-:root {{ --blau:#1f6fae; --hell:#9fd3f0; --navy:#1d3a5c; --navy2:#5b7491; --gruen:#2f9e55; --gruenhell:#e3f3e8; --orange:#c76f0a; --orangehell:#fdf0dc; --himmel:#f5f7f9; --linie:#dfe5ec; }}
+:root {{ --hellblau:#4DB2E6; --blau:#0067B1; --gruen:#46A84A; --hellgruen:#A6D27A; --gelb:#FFD100; --orange:#F39200; --silber:#B9C1C8; --dunkelblau:#0D2B4E;
+  --gruen-text:#1E6B2A; --orange-text:#9A4F00; --hg:#EEF5FA; --leise:#4A5E74; --linie:#D5DEE6; --rand:#6E8094; --gruen-hell:#E1F1E2; --orange-hell:#FDEED6; }}
 * {{ box-sizing: border-box; }}
 html, body {{ margin: 0; padding: 0; }}
-body {{ width: 210mm; height: 297mm; overflow: hidden; background: var(--himmel); color: var(--navy); font-family: "Andika", sans-serif; font-size: 9.3pt; line-height: 1.3; -webkit-print-color-adjust: exact; print-color-adjust: exact; }}
-h1, h2, h3 {{ font-family: "Grandstander", sans-serif; margin: 0; line-height: 1.15; }}
-svg.ic {{ width: 1.25em; height: 1.25em; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; vertical-align: -.22em; }}
+body {{ width: 210mm; height: 297mm; overflow: hidden; background: var(--hg); color: var(--dunkelblau); font-family: "Andika", sans-serif; font-size: 9.3pt; line-height: 1.3; -webkit-print-color-adjust: exact; print-color-adjust: exact; }}
+h1, h2, h3 {{ font-family: "Andika", sans-serif; margin: 0; line-height: 1.15; }}
+svg.ic {{ width: 1.25em; height: 1.25em; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; vertical-align: -.22em; }}
 
-/* Markise */
-.markise {{ height: 14mm; background: repeating-linear-gradient(90deg, var(--blau) 0 13mm, #fff 13mm 26mm); position: relative; }}
-.markise::after {{ content: ""; position: absolute; left: 0; right: 0; bottom: -5mm; height: 5mm;
-  background: radial-gradient(circle at 6.5mm 0, var(--blau) 6.4mm, transparent 6.5mm) 0 0 / 26mm 5mm repeat-x,
-              radial-gradient(circle at 19.5mm 0, #fff 6.4mm, transparent 6.5mm) 0 0 / 26mm 5mm repeat-x; }}
-.sign {{ position: absolute; left: 14mm; top: 3mm; background: #fff; border: 1mm solid var(--navy); border-radius: 3.5mm; padding: 0 5mm; box-shadow: 0 1.1mm 0 var(--navy);
-  font-family: "Grandstander", sans-serif; font-weight: 900; font-size: 23pt; letter-spacing: .01em; line-height: 1.25; }}
-.kopf {{ display: grid; grid-template-columns: 1fr 44mm; gap: 8mm; padding: 10mm 14mm 0; align-items: center; }}
-.lead {{ font-family: "Grandstander", sans-serif; font-weight: 800; font-size: 13.5pt; line-height: 1.22; margin: 0 0 2.2mm; }}
+/* Kopfzeile mit Farbband wie in der App */
+.band {{ height: 4mm; background: linear-gradient(90deg, var(--hellblau) 0 14.28%, var(--blau) 0 28.57%, var(--gruen) 0 42.85%, var(--hellgruen) 0 57.14%, var(--gelb) 0 71.42%, var(--orange) 0 85.71%, var(--silber) 0); }}
+.kopfzeile {{ background: #fff; border-bottom: .5mm solid var(--linie); padding: 3.6mm 14mm 3.4mm; display: flex; justify-content: space-between; align-items: baseline; }}
+.kopfzeile h1 {{ font-size: 24pt; font-weight: 700; }}
+.kopfzeile span {{ color: var(--leise); font-size: 10pt; }}
+.kopf {{ display: grid; grid-template-columns: 1fr 44mm; gap: 8mm; padding: 5.5mm 14mm 0; align-items: center; }}
+.lead {{ font-size: 14pt; line-height: 1.28; margin: 0 0 2.4mm; }}
 .chips {{ display: flex; flex-wrap: wrap; gap: 1.6mm; margin-top: 3mm; }}
-.chip {{ background: #fff; border: .5mm solid var(--navy); border-radius: 99px; padding: .2mm 2.6mm; font-weight: 700; font-size: 8.4pt; }}
-.qr {{ background: #fff; border: 1mm solid var(--navy); border-radius: 5mm; box-shadow: 0 1.3mm 0 var(--navy); padding: 3.2mm 2.6mm 2.4mm; text-align: center; }}
+.chip {{ background: #fff; border: .4mm solid var(--rand); border-radius: 99px; padding: .2mm 2.8mm; font-size: 8.4pt; }}
+.qr {{ background: #fff; border: .5mm solid var(--rand); border-radius: 5mm; padding: 3.2mm 2.6mm 2.4mm; text-align: center; }}
 .qr svg {{ width: 100%; display: block; }}
-.qr b {{ display: block; font-family: "Grandstander", sans-serif; font-weight: 800; font-size: 10.5pt; margin-top: 2mm; }}
-.qr span {{ font-size: 6.4pt; color: var(--navy2); white-space: nowrap; }}
+.qr b {{ display: block; font-weight: 700; font-size: 10.5pt; margin-top: 2mm; }}
+.qr span {{ font-size: 6.4pt; color: var(--leise); white-space: nowrap; }}
 
 /* Schritte */
-.schritte {{ display: grid; grid-template-columns: 1fr 1fr; gap: 3.6mm; padding: 6mm 14mm 0; }}
-.step {{ background: #fff; border: .5mm solid var(--linie); border-radius: 4mm; padding: 2.8mm 3.6mm 2.6mm; }}
-.step h3 {{ font-size: 11pt; display: flex; align-items: center; gap: 2.4mm; margin-bottom: 1.6mm; }}
-.nr {{ flex: none; width: 7.4mm; height: 7.4mm; border-radius: 50%; background: var(--hell); display: grid; place-items: center; font-family: "Grandstander", sans-serif; font-weight: 900; font-size: 12pt; }}
+.schritte {{ display: grid; grid-template-columns: 1fr 1fr; gap: 3.6mm; padding: 4.5mm 14mm 0; }}
+.step {{ background: #fff; border: .4mm solid var(--linie); border-radius: 4mm; padding: 2.8mm 3.6mm 2.6mm; }}
+.step h3 {{ font-size: 11pt; font-weight: 700; display: flex; align-items: center; gap: 2.4mm; margin-bottom: 1.6mm; }}
+.nr {{ flex: none; width: 7.4mm; height: 7.4mm; border-radius: 50%; background: var(--hellblau); color: var(--dunkelblau); display: grid; place-items: center; font-weight: 700; font-size: 11.5pt; }}
 .step ul {{ margin: 0; padding-left: 4.2mm; }}
 .step li {{ margin: .6mm 0; }}
 .step li::marker {{ color: var(--blau); }}
-b.k {{ font-weight: 700; }}
+b.k {{ font-weight: 400; color: var(--blau); }}   /* Hervorhebung durch Farbe statt Fettschrift */
 
 /* Unten */
 .unten {{ display: grid; grid-template-columns: 1fr 1fr; gap: 3.6mm; padding: 3.6mm 14mm 0; }}
 .box {{ border-radius: 4mm; padding: 2.8mm 3.6mm; border: .5mm solid; }}
-.box.gut {{ background: var(--gruenhell); border-color: var(--gruen); }}
-.box.tipp {{ background: var(--orangehell); border-color: var(--orange); }}
-.box h3 {{ font-size: 11pt; display: flex; align-items: center; gap: 2mm; margin-bottom: 1.5mm; }}
-.box.gut h3 {{ color: #1d5e25; }} .box.tipp h3 {{ color: var(--orange); }}
+.box.gut {{ background: var(--gruen-hell); border-color: var(--gruen); }}
+.box.tipp {{ background: var(--orange-hell); border-color: var(--orange); }}
+.box h3 {{ font-size: 11pt; font-weight: 700; display: flex; align-items: center; gap: 2mm; margin-bottom: 1.5mm; }}
+.box.gut h3 {{ color: var(--gruen-text); }} .box.tipp h3 {{ color: var(--orange-text); }}
+.box.gut b.k {{ color: var(--gruen-text); }} .box.tipp b.k {{ color: var(--orange-text); }}
 .box ul {{ margin: 0; padding-left: 4.2mm; }}
 .box li {{ margin: .5mm 0; }}
-.fuss {{ position: absolute; left: 14mm; right: 14mm; bottom: 6mm; display: flex; justify-content: space-between; font-size: 7.6pt; color: var(--navy2); border-top: .3mm solid var(--linie); padding-top: 2mm; }}
+.fuss {{ position: absolute; left: 14mm; right: 14mm; bottom: 5mm; display: flex; justify-content: space-between; font-size: 7.6pt; color: var(--leise); border-top: .3mm solid var(--linie); padding-top: 2mm; }}
 </style></head>
 <body>
-<div class="markise"><div class="sign">Antwort-Runde</div></div>
+<div class="band"></div>
+<div class="kopfzeile"><h1>Antwort-Runde</h1><span>Infoblatt für Lehrkräfte</span></div>
 
 <section class="kopf">
   <div>
     <p class="lead">Texte und Fragen werden vorgelesen. Die Kinder antworten frei: schreiben, sprechen, aufnehmen oder fotografieren. Du siehst jede Antwort sofort.</p>
-    <div>Läuft im Browser auf dem iPad und deinem Lehrer-Gerät. <b>Kein Konto, keine Installation:</b> Kinder kommen per QR-Code oder 4-stelligem Code.</div>
+    <div>Läuft im Browser auf dem iPad und deinem Lehrer-Gerät. <b class="k">Kein Konto, keine Installation:</b> Kinder kommen per QR-Code oder 4-stelligem Code.</div>
     <div class="chips"><span class="chip">Vorlesen</span><span class="chip">Freitext</span><span class="chip">Sprachaufnahme</span><span class="chip">Foto</span><span class="chip">Live-Antworten</span></div>
   </div>
   <div class="qr">{qr_svg(URL)}<b>App öffnen</b><span>walteroelf.github.io/Antwort-Runde</span></div>
